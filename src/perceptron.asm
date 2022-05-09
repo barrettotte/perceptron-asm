@@ -21,8 +21,8 @@ _start:                                     ; ***** entry *****
         mov rdx, msg_hello_len              ; length of message
         syscall                             ; invoke syscall
 
+        ; TODO: init weights to zero
         ; TODO: output weights to PPM
-        ; TODO: start with random weights in range?
 
         ; TODO: generate random rectangle
         ; TODO: generate random circle
