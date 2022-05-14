@@ -9,15 +9,17 @@ SOURCES  := $(shell find $(SRC_DIR)/* -type f \( -iname "*.asm" \) )
 OBJECTS  := $(foreach OBJECT, $(patsubst %.asm, %.o, $(SOURCES)), $(OBJ_DIR)/$(OBJECT))
 
 AS := nasm
-AS_FLAGS = -felf64 -g -i $(INCLUDES)
+AS_FLAGS = -f elf64 -g -i $(INCLUDES)
 
 LD := ld
-LD_FLAGS := 
+LD_FLAGS :=
 
 GDB := gdb
-GDB_FLAGS := -ex 'file $(TARGET)' \
-	-ex 'target remote localhost:1234' \
-	-ex 'layout regs'
+GDB_FLAGS := -ex 'set confirm off' \
+	-ex 'file $(TARGET)' \
+	-ex 'break _start' \
+	-ex 'layout asm' \
+	-ex 'run $(TARGET)'
 
 .PHONY:	.FORCE
 .FORCE:
@@ -36,6 +38,7 @@ $(OBJ_DIR)/%.o: %.asm
 
 clean:
 	@rm -rf $(BIN_DIR)/* $(OBJ_DIR)/*
+	@rm -f temp.ppm
 
 debug:	build
 	$(GDB) $(GDB_FLAGS)

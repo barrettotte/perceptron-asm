@@ -1,28 +1,36 @@
         global _start                       ;
+        extern ppm_write                    ;
         
+        ; config - move to config.inc?
         HEIGHT:       equ 20                ; height of layer
         WIDTH:        equ 20                ; width of layer
         SAMPLE_SIZE:  equ 10                ; sample size for training model
         TRAIN_PASSES: equ 50                ; number of training passes to perform
 
+        ; internal constants
+        LAYER_SIZE:   equ HEIGHT * WIDTH
+
         section .text
 
 _start:                                     ; ***** entry *****
-        mov eax, 1                          ; request feature report
+        mov rax, 1                          ; request feature report
         cpuid                               ; check CPU features 
         xor rax, rax                        ;
-        bt edx, 0x0                         ; test bit 0 for x87 FPU
+        bt rdx, 0x0                         ; test bit 0 for x87 FPU
         setc al                             ; set carry if FPU found
         jnc err_fpu                         ; if !C, no FPU found
 
-        mov rax, 1                          ; write command
+        finit                               ; reset floating point registers
+        
+
+        mov rax, 1                          ; sys_write command
         mov rdi, 1                          ; set file handle to stdout
         mov rsi, msg_hello                  ; pointer to message
         mov rdx, msg_hello_len              ; length of message
-        syscall                             ; invoke syscall
+        syscall                             ; call kernel
 
-        ; TODO: init weights to zero
         ; TODO: output weights to PPM
+        call ppm_write
 
         ; TODO: generate random rectangle
         ; TODO: generate random circle
@@ -41,21 +49,27 @@ _start:                                     ; ***** entry *****
         jmp end                             ; ended successfully
 
 err_fpu:                                    ; ***** CPU has no FPU *****
-        mov rax, 1                          ; write command
+        mov rax, 1                          ; sys_write command
         mov rdi, 1                          ; set file handle to stdout
         mov rsi, msg_err_1                  ; pointer to error message
         mov rdx, msg_err_1_len              ; length of error message
-        syscall                             ; invoke syscall
+        syscall                             ; call kernel
         mov rdi, 1                          ; set exit status
         jmp end                             ; exit program with failure
 
 end:                                        ; ***** end of main *****
-        mov rax, 60                         ; exit command
-        syscall                             ; invoke syscall
+        mov rax, 60                         ; sys_exit command
+        syscall                             ; call kernel
 
         section .data
 
+        section .rodata
 bias:           dq 20.0                     ; bias used for training model
+
+str_rect:       db "rect", 0x00             ;
+str_circ:       db "circ", 0x00             ;
+str_train:      db "train", 0x00            ;
+str_weights:    db "weights", 0x00          ;
 
 msg_hello:      db "Hello world",
                 db 0x0D, 0x0A, 0x00
@@ -64,3 +78,7 @@ msg_hello_len:  equ $ - msg_hello
 msg_err_1:      db "CPU does not have floating point support",
                 db 0x0D, 0x0A, 0x00
 msg_err_1_len:  equ $ - msg_err_1
+
+        section .bss
+weights:        resq LAYER_SIZE             ; weight vector
+inputs:         resq LAYER_SIZE             ; input vector 
