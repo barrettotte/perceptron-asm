@@ -1,5 +1,6 @@
-        global _start                       ;
-        extern ppm_fmatrix                  ;
+        global _start
+        extern count_digits
+        extern ppm_fmatrix
         
         ; config - move to config.inc?
         HEIGHT:       equ 20                ; height of layer
@@ -16,7 +17,7 @@
         section .data
 
         section .rodata
-bias:           dq 20.0                     ; bias used for training model
+bias:           dw 20.0                     ; bias used for training model
 
 test_file_name: db "temp", 0x00
 
@@ -29,8 +30,8 @@ msg_err_1:      db "CPU does not have floating point support",
 msg_err_1_len:  equ $ - msg_err_1
 
         section .bss
-weights:        resq LAYER_SIZE             ; weight vector
-inputs:         resq LAYER_SIZE             ; input vector 
+weights:        resw LAYER_SIZE             ; weight vector
+inputs:         resw LAYER_SIZE             ; input vector 
 
         section .text
 _start:                                     ; ***** main entry *****
@@ -49,8 +50,30 @@ _start:                                     ; ***** main entry *****
         syscall                             ; call kernel
 
         ; TODO: output weights to PPM
-        mov rsi, test_file_name             ; TODO: source pointer
+        mov rsi, weights                    ; TODO:
+        
+
+        mov dword [rsi], __float32__(123.45)
+        add rsi, 4
+        mov dword [rsi], __float32__(678.90)
+        add rsi, 4
+
+        ; float     hex        bin  sign  exponent  mantissa
+        ; 123.45    0x42f6e666      0     10000101  11101101110011001100110
+        ; 678.90    0x4429b99a      0     10001000  01010011011100110011010
+        ;
+        ; 0x4429b99a 0x42f6e666
+
+        mov rax, 0x00FF1414                 ; TODO: get from config
+        mov rdi, test_file_name             ; TODO: source pointer
         call ppm_fmatrix
+
+debug:
+        nop
+        nop
+        nop
+        nop
+        nop
 
         ; TODO: generate random rectangle
         ; TODO: generate random circle
