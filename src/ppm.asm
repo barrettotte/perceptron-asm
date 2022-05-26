@@ -58,7 +58,6 @@ ppm_new:
 ; *****************************************************************************
 ; ppm_header_p6 - Add P6 header to PPM file
 ;
-; TODO: args/clobbers
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
 ;             8:15 - n cols of matrix
@@ -120,8 +119,7 @@ ppm_header_p6:
 ;             16:31 - max color value
 ;             32:63 - unused
 ; rdi (arg) - pointer to base file name string
-; rsi (arg) - pointer to matrix
-; TODO: clobbers
+; rsi (arg) - pointer to matrix of floats
 ; *****************************************************************************
 ppm_fmatrix:
         call ppm_new                        ; create new PPM file
