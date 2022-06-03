@@ -1,20 +1,14 @@
         global _start
-        extern count_digits
         extern ppm_fmatrix
-        
-        ; config - move to config.inc?
-        HEIGHT:       equ 20                ; height of layer
-        WIDTH:        equ 20                ; width of layer
-        SAMPLE_SIZE:  equ 10                ; sample size for training model
-        TRAIN_PASSES: equ 50                ; number of training passes to perform
 
-        LAYER_SIZE:   equ HEIGHT * WIDTH
+        %include "src/config.inc"
+        %include "src/common.inc"
 
-        ; TODO: move to common.inc
-        SYS_WRITE:    equ 1
-        SYS_EXIT:     equ 60
+        LAYER_SIZE:   equ LAYER_LEN * LAYER_LEN
 
         section .data
+
+temp_float:     dw 0.0
 
         section .rodata
 bias:           dw 20.0                     ; bias used for training model
@@ -50,20 +44,29 @@ _start:                                     ; ***** main entry *****
         syscall                             ; call kernel
 
         ; TODO: output weights to PPM
-        mov rsi, weights                    ; TODO:
+
+        mov rsi, weights                    ;
         
-
-        mov dword [rsi], __float32__(123.45)
+        mov dword [rsi], __float32__(150.1)
         add rsi, 4
-        mov dword [rsi], __float32__(678.90)
+        mov dword [rsi], __float32__(245.5)
         add rsi, 4
 
-        ; float     hex        bin  sign  exponent  mantissa
-        ; 123.45    0x42f6e666      0     10000101  11101101110011001100110
-        ; 678.90    0x4429b99a      0     10001000  01010011011100110011010
-        ;
-        ; 0x4429b99a 0x42f6e666
+        mov rsi, weights                    ; load pointer to float matrix
+        add rsi, 4                          ; index 1 offset
+        fld dword [rsi]                     ; load weights[1] into ST
+        ; frndint                             ; round ST float to nearest integer and push ST
+        fisttp dword [temp_float]           ; (pop ST) save truncated float; temp_float = (int) weights[1]
 
+        ; temp_float = 0xF6 = 246
+
+        nop
+        nop
+        nop
+
+        ; 0x4316199A, 0x43758000
+
+        mov rsi, weights                    ;
         mov rax, 0x00FF1414                 ; TODO: get from config
         mov rdi, test_file_name             ; TODO: source pointer
         call ppm_fmatrix

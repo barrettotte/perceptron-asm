@@ -2,11 +2,7 @@
         extern itoa_10
         extern strlen
 
-        ; TODO: move to common.inc
-        SYS_WRITE:  equ 1
-        SYS_OPEN:   equ 2
-        SYS_CLOSE:  equ 3
-        CRLF:       equ 0x0A0D              ; CR LF
+        %include "src/common.inc"
 
         PPM_P6:     equ 0x3650              ; P6
         PPM_EXT:    equ 0x6D70702E          ; .ppm
@@ -58,7 +54,6 @@ ppm_new:
 ; *****************************************************************************
 ; ppm_header_p6 - Add P6 header to PPM file
 ;
-; TODO: args/clobbers
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
 ;             8:15 - n cols of matrix
@@ -120,14 +115,16 @@ ppm_header_p6:
 ;             16:31 - max color value
 ;             32:63 - unused
 ; rdi (arg) - pointer to base file name string
-; rsi (arg) - pointer to matrix
-; TODO: clobbers
+; rsi (arg) - pointer to matrix of floats
 ; *****************************************************************************
 ppm_fmatrix:
         call ppm_new                        ; create new PPM file
         call ppm_header_p6                  ; add P6 header to PPM file
         
         ; TODO: write matrix to file
+
+        ; TODO: convert float to int
+        ; pixel[3] = {int r, int g, int b}
 
         mov rax, SYS_CLOSE                  ; command
         mov rdi, [fd]                       ; PPM file descriptor

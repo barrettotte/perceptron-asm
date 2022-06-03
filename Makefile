@@ -9,7 +9,7 @@ SOURCES  := $(shell find $(SRC_DIR)/* -type f \( -iname "*.asm" \) )
 OBJECTS  := $(foreach OBJECT, $(patsubst %.asm, %.o, $(SOURCES)), $(OBJ_DIR)/$(OBJECT))
 
 AS := nasm
-AS_FLAGS = -f elf64 -g -i $(INCLUDES)
+AS_FLAGS = -f elf64 -g
 
 LD := ld
 LD_FLAGS :=
