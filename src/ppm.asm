@@ -4,7 +4,7 @@
 
         %include "src/common.inc"
 
-        PPM_P6:     equ 0x3650              ; P6
+        PPM_P3:     equ 0x3350              ; P3
         PPM_EXT:    equ 0x6D70702E          ; .ppm
         PPM_FMODE:  equ 0o102               ; O_CREAT
         PPM_FPERMS: equ 0o666               ; rw-rw-rw-
@@ -52,7 +52,7 @@ ppm_new:
         ret                                 ; end of ppm_new subroutine
 
 ; *****************************************************************************
-; ppm_header_p6 - Add P6 header to PPM file
+; ppm_header_p3 - Add P3 header to PPM file
 ;
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
@@ -60,14 +60,14 @@ ppm_new:
 ;             16:31 - max color value
 ;             32:63 - unused
 ; *****************************************************************************
-ppm_header_p6:
+ppm_header_p3:
         push rax                            ; save rax
         push rbx                            ; save rbx
 
         mov rbx, rax                        ; move packed field
         
         mov rdi, file_buffer                ; pointer to file buffer
-        mov word [rdi], PPM_P6              ; load PPM mode
+        mov word [rdi], PPM_P3              ; load PPM mode
         add rdi, 2                          ; increment pointer
         mov word [rdi], CRLF                ; load newline
         add rdi, 2                          ; increment pointer
@@ -104,7 +104,7 @@ ppm_header_p6:
 
         pop rbx                             ; restore rbx
         pop rax                             ; restore rax
-        ret                                 ; end of ppm_header_p6 subroutine
+        ret                                 ; end of ppm_header_p3 subroutine
 
 ; *****************************************************************************
 ; ppm_fmatrix - Write mxn float matrix to a new PPM file.
@@ -119,12 +119,17 @@ ppm_header_p6:
 ; *****************************************************************************
 ppm_fmatrix:
         call ppm_new                        ; create new PPM file
-        call ppm_header_p6                  ; add P6 header to PPM file
-        
-        ; TODO: write matrix to file
+        call ppm_header_p3                  ; add P3 header to PPM file
 
-        ; TODO: convert float to int
-        ; pixel[3] = {int r, int g, int b}
+        ; loop over rows,cols
+
+        ; TODO: function to convert float to int 0-255 (binary)
+        
+        ; TODO: build pixel[3] = {int r, int g, int b}
+
+        ; TODO: convert int to ASCII
+
+        ; TODO: write ASCII to file
 
         mov rax, SYS_CLOSE                  ; command
         mov rdi, [fd]                       ; PPM file descriptor

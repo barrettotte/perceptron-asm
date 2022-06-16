@@ -25,6 +25,7 @@ p/x (float[20][20])weights
 - [Veritasium - Future Computers Will Be Radically Different](https://www.youtube.com/watch?v=GVsUOuSjvcg)
 - ppm
   - https://manpages.ubuntu.com/manpages/bionic/man5/ppm.5.html
+  - https://people.cs.clemson.edu/~dhouse/courses/405/notes/ppm-files.pdf
   - [Netpbm](https://en.wikipedia.org/wiki/Netpbm#File_formats=)
 - floating point
   - https://en.wikibooks.org/wiki/X86_Assembly/Floating_Point
