@@ -2,7 +2,7 @@
         extern itoa_10
         extern strlen
 
-        %include "src/common.inc"
+        %include "inc/common.inc"
 
         PPM_P3:     equ 0x3350              ; P3
         PPM_P6:     equ 0x3650              ; P6

@@ -1,10 +1,11 @@
 
 BIN_DIR := bin
 OBJ_DIR := build
+INC_DIR := inc
 SRC_DIR := src
 
 TARGET   := $(BIN_DIR)/perceptron
-INCLUDES := $(shell find $(SRC_DIR)/* -type f \( -iname "*.inc" \) )
+INCLUDES := $(shell find $(INC_DIR)/* -type f \( -iname "*.inc" \) )
 SOURCES  := $(shell find $(SRC_DIR)/* -type f \( -iname "*.asm" \) )
 OBJECTS  := $(foreach OBJECT, $(patsubst %.asm, %.o, $(SOURCES)), $(OBJ_DIR)/$(OBJECT))
 

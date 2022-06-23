@@ -7,8 +7,8 @@
         extern layer_rect
         extern ppm_fmatrix
 
-        %include "src/config.inc"
-        %include "src/common.inc"
+        %include "inc/config.inc"
+        %include "inc/common.inc"
 
         LAYER_SIZE:   equ LAYER_LEN * LAYER_LEN
 

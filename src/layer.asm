@@ -4,7 +4,7 @@
         global layer_circ
         global layer_rect
 
-        %include "src/common.inc"
+        %include "inc/common.inc"
 
         section .data
 
