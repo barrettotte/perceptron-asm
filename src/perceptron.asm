@@ -1,4 +1,10 @@
         global _start
+
+        extern layer_clear
+        extern layer_add
+        extern layer_sub
+        extern layer_circ
+        extern layer_rect
         extern ppm_fmatrix
 
         %include "src/config.inc"
@@ -37,16 +43,90 @@ _start:                                     ; ***** main entry *****
         jnc err_fpu                         ; if !C, no FPU found
         finit                               ; reset floating point registers
 
+        call testing                        ; TODO: remove
+main:
+        mov rsi, weights                    ;
+        mov rax, LAYER_LEN                  ; PPM width
+        shl rax, 8                          ; move width to 2nd byte
+        or rax, LAYER_LEN                   ; PPM height in 1st byte
+        or rax, 0x00FF0000                  ; 255 color in 3rd byte
+
+        mov rdi, test_file_name             ; TODO: source pointer
+        call ppm_fmatrix
+
+        ; TODO: main
+        ;
+        ; seed random - rdseed https://www.felixcloutier.com/x86/rdseed
+        ;
+        ; get random value - rdrand https://www.felixcloutier.com/x86/rdrand
+        ;
+        ; int count = 0;
+        ;
+        ; for (int i = 0; i < TRAIN_PASSES; i++) {
+        ;   for (int j = 0; j < SAMPLE_SIZE; j++) {
+        ;
+        ;     // make random rectangle
+        ;     layer_clear();
+        ;     x = rand(0,LAYER_LEN), y = rand(0,LAYER_LEN);
+        ;     w = LAYER_LEN-x, h = LAYER_LEN-y;
+        ;     layer_rect(inputs, x, y, w, h, 1.0); // add rect
+        ;
+        ;     if (feed_fwd(inputs, weights) > BIAS) {
+        ;       layer_sub(inputs, weights);  // sub inputs from weights
+        ;       ppm_fmatrix(weights, "training/weights-xxx.ppm");
+        ;       count++;
+        ;     }
+        ;
+        ;     // make random circle
+        ;     layer_clear();
+        ;     cx = rand(0,LAYER_LEN), cy = rand(0,LAYER_LEN);
+        ;     r = MAX
+        ;     if (r > cx) r = cx;
+        ;     if (r > cy) r = cy;
+        ;     if (r > LAYER_LEN - cx) r = LAYER_LEN - cx;
+        ;     if (r > LAYER_LEN - cy) r = LAYER_LEN - cy;
+        ;     r = rand(1, r);
+        ;     layer_circ(inputs, cx, cy, r, 1.0);
+        ;
+        ;     if (feed_fwd(inputs, weights) < BIAS) {
+        ;       layer_add(inputs, weights);  // add inputs to weights
+        ;       ppm_fmatrix(weights, "training/weights-xxx.ppm");
+        ;       count++;
+        ;     }
+        ;   }
+        ;
+        ;   if (count <= 0); 
+        ;     break;
+        ; }
+
+        xor rdi, rdi                        ; clear exit code
+        jmp end                             ; ended successfully
+
+err_fpu:                                    ; ***** CPU has no FPU *****
+        mov rax, SYS_WRITE                  ; command
+        mov rdi, 1                          ; set file handle to stdout
+        mov rsi, msg_err_1                  ; pointer to error message
+        mov rdx, msg_err_1_len              ; length of error message
+        syscall                             ; call kernel
+        mov rdi, 1                          ; set exit status
+        jmp end                             ; exit program with failure
+
+end:                                        ; ***** end of main *****
+        mov rax, SYS_EXIT                   ; command
+        syscall                             ; call kernel
+
+
+
+; TODO: remove, this is just screwing around
+testing:
         mov rax, SYS_WRITE                  ; command
         mov rdi, 1                          ; set file handle to stdout
         mov rsi, msg_hello                  ; pointer to message
         mov rdx, msg_hello_len              ; length of message
         syscall                             ; call kernel
 
-        ; TODO: output weights to PPM
-
+        ; temp float testing
         mov rsi, weights                    ;
-        
         mov dword [rsi], __float32__(150.1)
         add rsi, 4
         mov dword [rsi], __float32__(245.5)
@@ -63,46 +143,6 @@ _start:                                     ; ***** main entry *****
         nop
         nop
         nop
-
         ; 0x4316199A, 0x43758000
 
-        mov rsi, weights                    ;
-        mov rax, 0x00FF1414                 ; TODO: get from config
-        mov rdi, test_file_name             ; TODO: source pointer
-        call ppm_fmatrix
-
-debug:
-        nop
-        nop
-        nop
-        nop
-        nop
-
-        ; TODO: generate random rectangle
-        ; TODO: generate random circle
-
-        ; TODO: create training data folder    (DEBUG only)
-        ; TODO: create training data PPM files (DEBUG only)
-
-        ; TODO: report untrained model results
-        ; TODO: train
-        ; TODO: save each pass weights as PPM  (DEBUG only)
-        ; TODO: report each pass results
-
-        ; TODO: report trained model results
-
-        xor rdi, rdi                        ; clear exit code, 0 = success
-        jmp end                             ; ended successfully
-
-err_fpu:                                    ; ***** CPU has no FPU *****
-        mov rax, SYS_WRITE                  ; command
-        mov rdi, 1                          ; set file handle to stdout
-        mov rsi, msg_err_1                  ; pointer to error message
-        mov rdx, msg_err_1_len              ; length of error message
-        syscall                             ; call kernel
-        mov rdi, 1                          ; set exit status
-        jmp end                             ; exit program with failure
-
-end:                                        ; ***** end of main *****
-        mov rax, SYS_EXIT                   ; command
-        syscall                             ; call kernel
+        ret

@@ -21,13 +21,14 @@ p/x (float[20][20])weights
 ## References
 
 - [x86 64-bit Linux System Calls](https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/)
+- [Feedforward Neural Network](https://en.wikipedia.org/wiki/Feedforward_neural_network)
 - [Perceptron Wikipedia](https://en.wikipedia.org/wiki/Perceptron)
 - [Veritasium - Future Computers Will Be Radically Different](https://www.youtube.com/watch?v=GVsUOuSjvcg)
-- ppm
+- PPM files
   - https://manpages.ubuntu.com/manpages/bionic/man5/ppm.5.html
   - https://people.cs.clemson.edu/~dhouse/courses/405/notes/ppm-files.pdf
   - [Netpbm](https://en.wikipedia.org/wiki/Netpbm#File_formats=)
-- floating point
+- Floating point
   - https://en.wikibooks.org/wiki/X86_Assembly/Floating_Point
   - http://www.ray.masmcode.com/tutorial/index.html
   - [IEEE-754 Floating Point Converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html)

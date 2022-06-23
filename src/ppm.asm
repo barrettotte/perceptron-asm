@@ -5,6 +5,7 @@
         %include "src/common.inc"
 
         PPM_P3:     equ 0x3350              ; P3
+        PPM_P6:     equ 0x3650              ; P6
         PPM_EXT:    equ 0x6D70702E          ; .ppm
         PPM_FMODE:  equ 0o102               ; O_CREAT
         PPM_FPERMS: equ 0o666               ; rw-rw-rw-
@@ -123,13 +124,18 @@ ppm_fmatrix:
 
         ; loop over rows,cols
 
-        ; TODO: function to convert float to int 0-255 (binary)
+        ; TODO: function to convert float to int
+
+        ; TODO: util function to clamp between two values
         
         ; TODO: build pixel[3] = {int r, int g, int b}
 
-        ; TODO: convert int to ASCII
+        ; call itoa_10
 
         ; TODO: write ASCII to file
+        ; TODO: add 4 blanks
+
+        ; TODO: write newline at every row switch
 
         mov rax, SYS_CLOSE                  ; command
         mov rdi, [fd]                       ; PPM file descriptor
