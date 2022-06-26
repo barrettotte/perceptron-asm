@@ -199,7 +199,6 @@ ppm_fmatrix:
         pop rcx
         pop rsi                             ; restore pointer to matrix
 
-        ;pop rcx                             ; restore x counter
         pop rax                             ; restore PPM arguments
         inc rcx                             ; x++
         add rsi, 4                          ; move to next pixel
