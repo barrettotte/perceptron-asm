@@ -16,6 +16,7 @@ I've also never written any x86 floating point code before, so why not now.
 
 ```text
 p/x (float[20][20])weights
+print (char*)&file_buffer
 ```
 
 ## References
@@ -34,3 +35,4 @@ p/x (float[20][20])weights
   - [IEEE-754 Floating Point Converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html)
   - https://www.cs.cornell.edu/~tomf/notes/cps104/floating.html
   - http://mathcenter.oxford.emory.edu/site/cs170/ieee754/
+  - [The Art of Assembly Language. Randall Hyde - Chapter 14](https://www.amazon.com/Art-Assembly-Language-2nd/dp/1593272073)

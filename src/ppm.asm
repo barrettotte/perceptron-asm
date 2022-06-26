@@ -9,6 +9,7 @@
         PPM_EXT:    equ 0x6D70702E          ; .ppm
         PPM_FMODE:  equ 0o102               ; O_CREAT
         PPM_FPERMS: equ 0o666               ; rw-rw-rw-
+        SPACES_4:   equ 0x20202020          ; 4 blanks
 
         section .data
 
@@ -18,6 +19,7 @@
 fd:             resd 1                      ; scratch file descriptor
 file_name:      resb 32                     ; scratch file name
 file_buffer:    resb 64                     ; scratch file buffer
+float_buffer:   resd 1                      ; scratch buffer for floating point
 
         section .text
 
@@ -53,15 +55,15 @@ ppm_new:
         ret                                 ; end of ppm_new subroutine
 
 ; *****************************************************************************
-; ppm_header_p3 - Add P3 header to PPM file
+; ppm_header - Add header to PPM file
 ;
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
 ;             8:15 - n cols of matrix
-;             16:31 - max color value
+;             16:31 - unused
 ;             32:63 - unused
 ; *****************************************************************************
-ppm_header_p3:
+ppm_header:
         push rax                            ; save rax
         push rbx                            ; save rbx
 
@@ -85,11 +87,9 @@ ppm_header_p3:
         call itoa_10                        ; columns ASCII
         mov byte [rdi], ' '                 ; add space
         inc rdi                             ; increment pointer
-        
-        mov rax, rbx                        ; load packed field
-        and rax, 0xFF0000                   ; get max color value
-        shr rax, 16                         ; adjust field - shift 2 bytes
-        call itoa_10                        ; max color value ASCII
+
+        mov rax, 0xFF                       ; load max color value - 255
+        call itoa_10                        ; convert to ASCII
         mov word [rdi], CRLF                ; newline
         add rdi, 2                          ; increment pointer
 
@@ -105,7 +105,7 @@ ppm_header_p3:
 
         pop rbx                             ; restore rbx
         pop rax                             ; restore rax
-        ret                                 ; end of ppm_header_p3 subroutine
+        ret                                 ; end of ppm_header subroutine
 
 ; *****************************************************************************
 ; ppm_fmatrix - Write mxn float matrix to a new PPM file.
@@ -113,32 +113,132 @@ ppm_header_p3:
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
 ;             8:15 - n cols of matrix
-;             16:31 - max color value
+;             16:31 - unused
 ;             32:63 - unused
 ; rdi (arg) - pointer to base file name string
 ; rsi (arg) - pointer to matrix of floats
 ; *****************************************************************************
 ppm_fmatrix:
+        push rdi                            ; save rdi
+        push rbx                            ; save rbx
+        push rcx                            ; save rcx
+        push rdx                            ; save rdx
+
         call ppm_new                        ; create new PPM file
-        call ppm_header_p3                  ; add P3 header to PPM file
-
-        ; loop over rows,cols
-
-        ; TODO: function to convert float to int
-
-        ; TODO: util function to clamp between two values
+        call ppm_header                     ; add header to PPM file
         
-        ; TODO: build pixel[3] = {int r, int g, int b}
+        xor rbx, rbx                        ; y = 0
+.loop_y:
+        push rax                            ; save PPM arguments for y loop termination
+        xor rcx, rcx                        ; x = 0
+.loop_x:
+        push rax                            ; save PPM arguments for x loop termination
 
-        ; call itoa_10
+        push rsi                            ; save matrix pointer
+        fld dword [rsi]                     ; load mat[y][x] into ST0
+        mov rsi, float_buffer               ; set temp pointer
+        ; mov dword [rsi], __float32__(255.0) ; load literal 255.0
+        ; fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
+        ; fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
+        ; 0x437f0000 == 1,132,396,544
+        ; => 113
+        mov rdi, float_buffer               ; set buffer pointer
+        fisttp word [rdi]                   ; red = (int) (mat[y][x] * 255.0)
+        pop rsi                             ; restore matrix pointer
 
-        ; TODO: write ASCII to file
-        ; TODO: add 4 blanks
+        mov rax, [rdi]                      ; load red value
+        mov rdi, file_buffer                ; set buffer pointer
+        mov dword [rdi], 0x202020           ; clear max digits
+        push rcx                            ; save x counter
+        call itoa_10                        ; write red value ASCII to file buffer
+        mov rax, 3                          ; max digits
+        sub rax, rcx                        ; find blanks needed
+        pop rcx                             ; restore x counter
+        add rdi, rax                        ; pad number
 
-        ; TODO: write newline at every row switch
+        mov byte [rdi], ' '                 ; add space
+        inc rdi                             ; increment file buffer pointer
 
+        ; fld dword [rsi]                     ; load mat[y][x] into ST0
+        ; push rsi                            ; save matrix pointer
+        ; mov dword [rsi], __float32__(1.0)   ; load literal 1.0
+        ; fld dword [rsi]                     ; ST0 = 1.0, ST1 = mat[y][x]
+        ; fsubp                               ; ST0 = 1.0 - mat[y][x]; pop ST1
+        ; mov dword [rsi], __float32__(255.0) ; load literal 255.0
+        ; fld dword [rsi]                     ; ST0 = 255.0, ST1 = 1.0 - mat[y][x]
+        ; pop rsi                             ; restore matrix pointer
+        ; fmulp                               ; ST0 = 255.0 * (1-mat[y][x]); pop ST1
+        ; push rdi                            ; save file buffer pointer
+        ; mov rdi, float_buffer               ; set buffer pointer
+        ; fisttp word [rdi]                   ; green = (int) (255.0 * (1.0 - mat[y][x]))
+
+        ; mov rax, [rdi]                      ; load green value
+        ; pop rdi                             ; restore file buffer pointer
+        ; call itoa_10                        ; write green value ASCII to file buffer
+        ; add rdi, 3                          ; increment file buffer pointer
+        ; mov byte [rdi], ' '                 ; add space
+        ; inc rdi                             ; increment file buffer pointer
+
+        ; TODO: temp
+        mov dword [rdi], 0x20202030         ; green = 0, plus space
+        add rdi, 4                          ; increment file buffer pointer
+
+        mov dword [rdi], 0x20202030         ; blue = 0, plus space
+        add rdi, 4                          ; increment file buffer pointer
+        mov dword [rdi], SPACES_4           ; blank space between pixels
+        add rdi, 4                          ; increment file buffer pointer
+
+        mov byte [rdi], 0x00                ; null terminate file buffer
+        mov rdi, file_buffer                ; reset pointer position
+        call strlen                         ; calculate length of file buffer
+        mov rdx, rax                        ; store file buffer length
+.next_x:
+        push rsi                            ; save pointer to matrix
+        push rcx
+        mov rax, SYS_WRITE                  ; command
+        mov rdi, [fd]                       ; file descriptor
+        mov rsi, file_buffer                ; pointer to string
+        syscall                             ; call kernel
+        pop rcx
+        pop rsi                             ; restore pointer to matrix
+
+        ;pop rcx                             ; restore x counter
+        pop rax                             ; restore PPM arguments
+        inc rcx                             ; x++
+        add rsi, 4                          ; move to next pixel
+
+        mov rdx, rax                        ; load PPM arguments
+        and rdx, 0xFF00                     ; isolate 2nd argument
+        shr rdx, 8                          ; load cols
+        cmp rcx, rdx                        ; test
+        jl .loop_x                          ; while (x < cols)
+.next_y:
+        mov rdi, file_buffer                ; set pointer to buffer
+        mov word [rdi], CRLF                ; load newline
+        add rdi, 2                          ; increment buffer pointer
+        mov byte [rdi], 0x00                ; null terminate buffer
+
+        push rsi                            ; save pointer to matrix
+        mov rax, SYS_WRITE                  ; command
+        mov rdx, 2                          ; CRLF
+        mov rdi, [fd]                       ; file descriptor
+        mov rsi, file_buffer                ; pointer to string
+        syscall                             ; call kernel
+        pop rsi                             ; restore pointer to matrix
+
+        pop rax                             ; restore PPM arguments
+        inc rbx                             ; y++
+        mov rdx, rax                        ; load PPM arguments
+        and rdx, 0xFF                       ; isolate 1st argument; load rows
+        cmp rbx, rdx                        ; test
+        jl .loop_y                          ; while (y < rows)
+.done:
         mov rax, SYS_CLOSE                  ; command
         mov rdi, [fd]                       ; PPM file descriptor
         syscall                             ; call kernel
 
+        pop rdx                             ; restore rdx
+        pop rcx                             ; restore rcx
+        pop rbx                             ; restore rbx
+        pop rdi                             ; restore rdi
         ret                                 ; end of ppm_fmatrix subroutine

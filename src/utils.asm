@@ -41,8 +41,10 @@ count_digits:
 ;
 ; rax (arg) - integer to convert
 ; rdi (arg) - pointer to write string to
+; rcx (ret) - digit count
 ; *****************************************************************************
 itoa_10:
+        push rdx                            ; save rdx
         push rax                            ; save rax
         push rbx                            ; save rbx
 
@@ -64,8 +66,10 @@ itoa_10:
         inc di                              ; increment pointer
         loop .digit                         ; while (CX > 0)
 
+        mov rcx, rbx                        ; return digit count
         pop rbx                             ; restore rbx
         pop rax                             ; restore rax
+        pop rdx                             ; restore rdx
         ret                                 ; end itoa_10 subroutine
 
 ; *****************************************************************************

@@ -41,15 +41,17 @@ _start:                                     ; ***** main entry *****
         bt rdx, 0x0                         ; test bit 0 for x87 FPU
         setc al                             ; set carry if FPU found
         jnc err_fpu                         ; if !C, no FPU found
-        finit                               ; reset floating point registers
+        
+        finit                               ; empty stack, mask exceptions, set default rounding to nearest
+        ; TODO: init rounding mode?
 
-        call testing                        ; TODO: remove
+
+        ;call testing                        ; TODO: remove
 main:
         mov rsi, weights                    ;
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte
         or rax, LAYER_LEN                   ; PPM height in 1st byte
-        or rax, 0x00FF0000                  ; 255 color in 3rd byte
 
         mov rdi, test_file_name             ; TODO: source pointer
         call ppm_fmatrix

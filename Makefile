@@ -20,6 +20,7 @@ GDB_FLAGS := -ex 'set confirm off' \
 	-ex 'file $(TARGET)' \
 	-ex 'break _start' \
 	-ex 'layout asm' \
+	-ex 'layout regs' \
 	-ex 'run $(TARGET)'
 
 .PHONY:	.FORCE
