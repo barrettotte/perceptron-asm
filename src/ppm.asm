@@ -135,15 +135,14 @@ ppm_fmatrix:
         push rax                            ; save PPM arguments for x loop termination
 
         push rsi                            ; save matrix pointer
-        fld dword [rsi]                     ; load mat[y][x] into ST0
+        mov rsi, float_buffer
+        fld dword [rsi]                     ; ST0 = mat[y][x]
         mov rsi, float_buffer               ; set temp pointer
-        ; mov dword [rsi], __float32__(255.0) ; load literal 255.0
-        ; fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
-        ; fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
-        ; 0x437f0000 == 1,132,396,544
-        ; => 113
+        mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
+        fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
+        fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
         mov rdi, float_buffer               ; set buffer pointer
-        fisttp word [rdi]                   ; red = (int) (mat[y][x] * 255.0)
+        fisttp dword [rdi]                  ; red = (int) (mat[y][x] * 255.0)
         pop rsi                             ; restore matrix pointer
 
         mov rax, [rdi]                      ; load red value
