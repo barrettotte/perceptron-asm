@@ -133,55 +133,53 @@ ppm_fmatrix:
         xor rcx, rcx                        ; x = 0
 .loop_x:
         push rax                            ; save PPM arguments for x loop termination
-
+        mov rdi, file_buffer                ; set buffer pointer
+.red:
         push rsi                            ; save matrix pointer
-        mov rsi, float_buffer
         fld dword [rsi]                     ; ST0 = mat[y][x]
         mov rsi, float_buffer               ; set temp pointer
         mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
         fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
         fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
-        mov rdi, float_buffer               ; set buffer pointer
-        fisttp dword [rdi]                  ; red = (int) (mat[y][x] * 255.0)
-        pop rsi                             ; restore matrix pointer
+        mov rsi, float_buffer               ; set buffer pointer
+        fistp dword [rsi]                   ; red = (int) (mat[y][x] * 255.0)
 
-        mov rax, [rdi]                      ; load red value
-        mov rdi, file_buffer                ; set buffer pointer
+        mov rax, [rsi]                      ; load red value
         mov dword [rdi], 0x202020           ; clear max digits
         push rcx                            ; save x counter
         call itoa_10                        ; write red value ASCII to file buffer
         mov rax, 3                          ; max digits
         sub rax, rcx                        ; find blanks needed
         pop rcx                             ; restore x counter
-        add rdi, rax                        ; pad number
 
+        add rdi, rax                        ; pad number
         mov byte [rdi], ' '                 ; add space
         inc rdi                             ; increment file buffer pointer
+        pop rsi                             ; restore matrix pointer
+.green:
+        push rsi                            ; save matrix pointer
+        fld1                                ; ST0 = 1
+        fld dword [rsi]                     ; ST0 = mat[y][x], ST1 = 1
+        fsubp st1, st0                      ; ST0 = 1 - mat[y][x]; pop ST1
+        mov rsi, float_buffer               ; set temp pointer
+        mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
+        fld dword [rsi]                     ; ST0 = 255.0, ST1 = 1 - mat[y][x]
+        fmulp                               ; ST0 = 255.0 * (1 - mat[y][x]); pop ST1
+        fistp dword[rsi]                    ; green = (int) (255.0 * (1 - mat[y][x]))
 
-        ; fld dword [rsi]                     ; load mat[y][x] into ST0
-        ; push rsi                            ; save matrix pointer
-        ; mov dword [rsi], __float32__(1.0)   ; load literal 1.0
-        ; fld dword [rsi]                     ; ST0 = 1.0, ST1 = mat[y][x]
-        ; fsubp                               ; ST0 = 1.0 - mat[y][x]; pop ST1
-        ; mov dword [rsi], __float32__(255.0) ; load literal 255.0
-        ; fld dword [rsi]                     ; ST0 = 255.0, ST1 = 1.0 - mat[y][x]
-        ; pop rsi                             ; restore matrix pointer
-        ; fmulp                               ; ST0 = 255.0 * (1-mat[y][x]); pop ST1
-        ; push rdi                            ; save file buffer pointer
-        ; mov rdi, float_buffer               ; set buffer pointer
-        ; fisttp word [rdi]                   ; green = (int) (255.0 * (1.0 - mat[y][x]))
+        mov rax, [rsi]                      ; load green value
+        mov dword [rdi], 0x202020           ; clear max digits
+        push rcx                            ; save x counter
+        call itoa_10                        ; write green value ASCII to file buffer
+        mov rax, 3                          ; max digits
+        sub rax, rcx                        ; find blanks needed
+        pop rcx                             ; restore x counter
 
-        ; mov rax, [rdi]                      ; load green value
-        ; pop rdi                             ; restore file buffer pointer
-        ; call itoa_10                        ; write green value ASCII to file buffer
-        ; add rdi, 3                          ; increment file buffer pointer
-        ; mov byte [rdi], ' '                 ; add space
-        ; inc rdi                             ; increment file buffer pointer
-
-        ; TODO: temp
-        mov dword [rdi], 0x20202030         ; green = 0, plus space
-        add rdi, 4                          ; increment file buffer pointer
-
+        add rdi, rax                        ; pad number
+        mov byte [rdi], ' '                 ; add space
+        inc rdi                             ; increment file buffer pointer
+        pop rsi                             ; restore matrix pointer
+.blue:
         mov dword [rdi], 0x20202030         ; blue = 0, plus space
         add rdi, 4                          ; increment file buffer pointer
         mov dword [rdi], SPACES_4           ; blank space between pixels

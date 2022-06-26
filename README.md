@@ -24,6 +24,7 @@ print (char*)&file_buffer
 - [x86 64-bit Linux System Calls](https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/)
 - [Feedforward Neural Network](https://en.wikipedia.org/wiki/Feedforward_neural_network)
 - [Perceptron Wikipedia](https://en.wikipedia.org/wiki/Perceptron)
+- [Compiler Explorer](https://godbolt.org/)
 - [Veritasium - Future Computers Will Be Radically Different](https://www.youtube.com/watch?v=GVsUOuSjvcg)
 - PPM files
   - https://manpages.ubuntu.com/manpages/bionic/man5/ppm.5.html
