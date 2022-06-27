@@ -1,4 +1,5 @@
         global ppm_fmatrix
+
         extern itoa_10
         extern strlen
 
@@ -29,7 +30,8 @@ float_buffer:   resd 1                      ; scratch buffer for floating point
 ; rdi (arg) - pointer to base file name
 ; *****************************************************************************
 ppm_new:
-        push rax                            ; store rax
+        push rax                            ; save rax
+        push rsi                            ; save rsi
 
         call strlen                         ; find length of base file name
         mov rcx, rax                        ; base file name length
@@ -51,6 +53,7 @@ ppm_new:
 
         mov [fd], rax                       ; store file descriptor
 
+        pop rsi                             ; restore rsi
         pop rax                             ; restore rax
         ret                                 ; end of ppm_new subroutine
 
@@ -66,6 +69,7 @@ ppm_new:
 ppm_header:
         push rax                            ; save rax
         push rbx                            ; save rbx
+        push rsi                            ; save rsi
 
         mov rbx, rax                        ; move packed field
         
@@ -103,6 +107,7 @@ ppm_header:
         mov rsi, file_buffer                ; pointer to string
         syscall                             ; call kernel
 
+        pop rsi                             ; restore rsi
         pop rbx                             ; restore rbx
         pop rax                             ; restore rax
         ret                                 ; end of ppm_header subroutine
@@ -119,6 +124,7 @@ ppm_header:
 ; rsi (arg) - pointer to matrix of floats
 ; *****************************************************************************
 ppm_fmatrix:
+        push rsi                            ; save rsi
         push rdi                            ; save rdi
         push rbx                            ; save rbx
         push rcx                            ; save rcx
@@ -142,7 +148,7 @@ ppm_fmatrix:
         fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
         fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
         mov rsi, float_buffer               ; set buffer pointer
-        fistp dword [rsi]                   ; red = (int) (mat[y][x] * 255.0)
+        fisttp dword [rsi]                  ; red = (int) (mat[y][x] * 255.0)
 
         mov rax, [rsi]                      ; load red value
         mov dword [rdi], 0x202020           ; clear max digits
@@ -165,7 +171,7 @@ ppm_fmatrix:
         mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
         fld dword [rsi]                     ; ST0 = 255.0, ST1 = 1 - mat[y][x]
         fmulp                               ; ST0 = 255.0 * (1 - mat[y][x]); pop ST1
-        fistp dword[rsi]                    ; green = (int) (255.0 * (1 - mat[y][x]))
+        fisttp dword[rsi]                   ; green = (int) (255.0 * (1 - mat[y][x]))
 
         mov rax, [rsi]                      ; load green value
         mov dword [rdi], 0x202020           ; clear max digits
@@ -202,7 +208,6 @@ ppm_fmatrix:
         pop rax                             ; restore PPM arguments
         inc rcx                             ; x++
         add rsi, 4                          ; move to next pixel
-
         mov rdx, rax                        ; load PPM arguments
         and rdx, 0xFF00                     ; isolate 2nd argument
         shr rdx, 8                          ; load cols
@@ -237,4 +242,5 @@ ppm_fmatrix:
         pop rcx                             ; restore rcx
         pop rbx                             ; restore rbx
         pop rdi                             ; restore rdi
+        pop rsi                             ; restore rsi
         ret                                 ; end of ppm_fmatrix subroutine

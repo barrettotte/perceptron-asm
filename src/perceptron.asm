@@ -13,23 +13,24 @@
         LAYER_SIZE:   equ LAYER_LEN * LAYER_LEN
 
         section .data
+test_layer:     times LAYER_SIZE dd __float32__(0.45)
 
         section .rodata
 test_file_name: db "temp", 0x00
 
         section .bss
-weights:        resw LAYER_SIZE             ; weight vector
-inputs:         resw LAYER_SIZE             ; input vector 
+weights:        resw LAYER_SIZE             ; weight matrix
+inputs:         resw LAYER_SIZE             ; input matrix 
 
         section .text
 _start:                                     ; ***** main entry *****
         finit                               ; empty stack, mask exceptions, set default rounding to nearest
-        ; TODO: init rounding mode?
 main:
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte
         or rax, LAYER_LEN                   ; PPM height in 1st byte
-        mov rsi, inputs                     ; pointer to inputs matrix
+        ;mov rsi, inputs                     ; pointer to inputs matrix
+        mov rsi, test_layer
         mov rdi, test_file_name             ; pointer to file name
         call ppm_fmatrix                    ; save float matrix to PPM file
 

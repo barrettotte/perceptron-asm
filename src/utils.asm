@@ -1,4 +1,3 @@
-        
         global count_digits
         global itoa_10
         global strlen

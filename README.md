@@ -12,13 +12,6 @@ I've also never written any x86 floating point code before, so why not now.
 - build and run: `make run`
 - run: `./bin/perceptron`
 
-## Debug Notes
-
-```text
-p/x (float[20][20])weights
-print (char*)&file_buffer
-```
-
 ## References
 
 - [x86 64-bit Linux System Calls](https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/)
