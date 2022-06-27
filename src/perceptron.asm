@@ -29,6 +29,11 @@ inputs:         resw LAYER_SIZE             ; input matrix
 _start:                                     ; ***** main entry *****
         finit                               ; empty stack, mask exceptions, set default rounding to nearest
 main:
+        ; nop ; testing layer_clear
+        ; mov rax, LAYER_SIZE
+        ; mov rdi, test_layer
+        ; call layer_clear
+
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte
         or rax, LAYER_LEN                   ; PPM height in 1st byte
@@ -37,6 +42,7 @@ main:
         mov rdi, test_file_name             ; pointer to file name
         call ppm_fmatrix                    ; save float matrix to PPM file
 
+        ; nop ; testing prng
         ; rdrand eax
         ; mov rax, TEST_SEED
         ; call srand

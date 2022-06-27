@@ -15,12 +15,25 @@
         section .text
 
 ; *****************************************************************************
-; layer_clear - Reset current layer to 0.0
+; layer_clear - Reset all layer elements to 0.0
 ;
-; TODO:
+; rax (arg) - layer size
+; rdi (arg) - pointer to layer
 ; *****************************************************************************
 layer_clear:
-        nop                                 ; TODO:
+        push rcx                            ; save rcx
+        push rdi                            ; save layer pointer
+        xor rcx, rcx                        ; x = 0
+.loop_i:
+        mov dword [rdi], __float32__(0.0)   ; clear element
+.next_i:
+        add rdi, 4                          ; move to next element
+        inc rcx                             ; x++
+        cmp rcx, rax                        ; test
+        jl .loop_i                          ; while (i < layer_size)
+.done:
+        pop rdi                             ; restore layer pointer
+        pop rcx                             ; restore rcx
         ret                                 ; end of layer_clear subroutine
 
 ; *****************************************************************************
