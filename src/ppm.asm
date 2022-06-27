@@ -71,20 +71,18 @@ ppm_header:
         push rbx                            ; save rbx
         push rsi                            ; save rsi
 
-        mov rbx, rax                        ; move packed field
-        
         mov rdi, file_buffer                ; pointer to file buffer
         mov word [rdi], PPM_P3              ; load PPM mode
         add rdi, 2                          ; increment pointer
         mov word [rdi], CRLF                ; load newline
         add rdi, 2                          ; increment pointer
 
-        mov rax, rbx                        ; load packed field
+        mov rbx, rax                        ; load packed field
         and rax, 0xFF                       ; get rows of matrix
         call itoa_10                        ; rows ASCII
         mov byte [rdi], ' '                 ; add space
         inc rdi                             ; increment pointer
-        
+
         mov rax, rbx                        ; load packed field
         and rax, 0xFF00                     ; get columns of matrix
         shr rax, 8                          ; adjust field - shift 1 byte
@@ -132,7 +130,7 @@ ppm_fmatrix:
 
         call ppm_new                        ; create new PPM file
         call ppm_header                     ; add header to PPM file
-        
+
         xor rbx, rbx                        ; y = 0
 .loop_y:
         push rax                            ; save PPM arguments for y loop termination

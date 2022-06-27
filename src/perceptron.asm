@@ -6,14 +6,17 @@
         extern layer_circ
         extern layer_rect
         extern ppm_fmatrix
+        extern rand32_range
+        extern srand
 
         %include "inc/config.inc"
         %include "inc/common.inc"
 
         LAYER_SIZE:   equ LAYER_LEN * LAYER_LEN
+        TEST_SEED:    equ 0x1337            ; test PRNG seed
 
         section .data
-test_layer:     times LAYER_SIZE dd __float32__(0.45)
+test_layer:     times LAYER_SIZE dd __float32__(0.50)
 
         section .rodata
 test_file_name: db "temp", 0x00
@@ -34,9 +37,12 @@ main:
         mov rdi, test_file_name             ; pointer to file name
         call ppm_fmatrix                    ; save float matrix to PPM file
 
-        ; seed random - rdseed https://www.felixcloutier.com/x86/rdseed
-        ; get random value - rdrand https://www.felixcloutier.com/x86/rdrand
-        ;
+        ; rdrand eax
+        ; mov rax, TEST_SEED
+        ; call srand
+        ; mov rax, 10
+        ; call rand32_range
+
         ; int count = 0;
         ;
         ; for (int i = 0; i < TRAIN_PASSES; i++) {
