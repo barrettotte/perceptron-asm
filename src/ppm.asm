@@ -10,7 +10,8 @@
         PPM_EXT:    equ 0x6D70702E          ; .ppm
         PPM_FMODE:  equ 0o102               ; O_CREAT
         PPM_FPERMS: equ 0o666               ; rw-rw-rw-
-        SPACES_4:   equ 0x20202020          ; 4 blanks
+        SPACES_3:   equ 0x202020            ; 3 blanks
+        F255:       equ __float32__(255.0)  ; float 255 (0x437F0000)
 
         section .data
 
@@ -69,6 +70,7 @@ ppm_new:
 ppm_header:
         push rax                            ; save rax
         push rbx                            ; save rbx
+        push rdi                            ; save rdi
         push rsi                            ; save rsi
 
         mov rdi, file_buffer                ; pointer to file buffer
@@ -106,6 +108,7 @@ ppm_header:
         syscall                             ; call kernel
 
         pop rsi                             ; restore rsi
+        pop rdi                             ; restore rdi
         pop rbx                             ; restore rbx
         pop rax                             ; restore rax
         ret                                 ; end of ppm_header subroutine
@@ -142,14 +145,13 @@ ppm_fmatrix:
         push rsi                            ; save matrix pointer
         fld dword [rsi]                     ; ST0 = mat[y][x]
         mov rsi, float_buffer               ; set temp pointer
-        mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
+        mov dword [rsi], F255               ; load literal 255.0
         fld dword [rsi]                     ; ST0 = 255.0, ST1 = mat[y][x]
         fmulp                               ; ST0 = 255.0 * mat[y][x]; pop ST1
-        mov rsi, float_buffer               ; set buffer pointer
         fisttp dword [rsi]                  ; red = (int) (mat[y][x] * 255.0)
 
         mov rax, [rsi]                      ; load red value
-        mov dword [rdi], 0x202020           ; clear max digits
+        mov dword [rdi], SPACES_3           ; clear max digits
         push rcx                            ; save x counter
         call itoa_10                        ; write red value ASCII to file buffer
         mov rax, 3                          ; max digits
@@ -164,15 +166,15 @@ ppm_fmatrix:
         push rsi                            ; save matrix pointer
         fld1                                ; ST0 = 1
         fld dword [rsi]                     ; ST0 = mat[y][x], ST1 = 1
-        fsubp st1, st0                      ; ST0 = 1 - mat[y][x]; pop ST1
+        fsubp                               ; ST0 = 1 - mat[y][x]; pop ST1
         mov rsi, float_buffer               ; set temp pointer
-        mov dword [rsi], __float32__(255.0) ; load literal 255.0 (0x437F0000)
+        mov dword [rsi], F255               ; load literal 255.0 (0x437F0000)
         fld dword [rsi]                     ; ST0 = 255.0, ST1 = 1 - mat[y][x]
         fmulp                               ; ST0 = 255.0 * (1 - mat[y][x]); pop ST1
         fisttp dword[rsi]                   ; green = (int) (255.0 * (1 - mat[y][x]))
 
         mov rax, [rsi]                      ; load green value
-        mov dword [rdi], 0x202020           ; clear max digits
+        mov dword [rdi], SPACES_3           ; clear max digits
         push rcx                            ; save x counter
         call itoa_10                        ; write green value ASCII to file buffer
         mov rax, 3                          ; max digits
@@ -184,10 +186,12 @@ ppm_fmatrix:
         inc rdi                             ; increment file buffer pointer
         pop rsi                             ; restore matrix pointer
 .blue:
-        mov dword [rdi], 0x20202030         ; blue = 0, plus space
-        add rdi, 4                          ; increment file buffer pointer
-        mov dword [rdi], SPACES_4           ; blank space between pixels
-        add rdi, 4                          ; increment file buffer pointer
+        mov byte [rdi], 0x30                ; blue = 0
+        inc rdi                             ; increment file buffer pointer
+        mov dword [rdi], SPACES_3           ; 2 spaces for blue, 1 space for pixel spacing
+        add rdi, 3                          ; increment file buffer pointer
+        mov dword [rdi], SPACES_3           ; blank spaces between pixels
+        add rdi, 3                          ; increment file buffer pointer
 
         mov byte [rdi], 0x00                ; null terminate file buffer
         mov rdi, file_buffer                ; reset pointer position

@@ -1,4 +1,4 @@
-        global layer_clear
+        global layer_fill
         global layer_add
         global layer_sub
         global layer_circ
@@ -15,26 +15,24 @@
         section .text
 
 ; *****************************************************************************
-; layer_clear - Reset all layer elements to 0.0
+; layer_fill - Reset all layer elements to given floating point value
 ;
 ; rax (arg) - layer size
+; ebx (arg) - floating point value
 ; rdi (arg) - pointer to layer
 ; *****************************************************************************
-layer_clear:
+layer_fill:
         push rcx                            ; save rcx
-        push rdi                            ; save layer pointer
-        xor rcx, rcx                        ; x = 0
+        xor rcx, rcx                        ; i = 0
 .loop_i:
-        mov dword [rdi], __float32__(0.0)   ; clear element
+        mov dword [rdi + (rcx * 4)], ebx    ; layer[i] = c
 .next_i:
-        add rdi, 4                          ; move to next element
-        inc rcx                             ; x++
+        inc rcx                             ; i++
         cmp rcx, rax                        ; test
         jl .loop_i                          ; while (i < layer_size)
 .done:
-        pop rdi                             ; restore layer pointer
         pop rcx                             ; restore rcx
-        ret                                 ; end of layer_clear subroutine
+        ret                                 ; end of layer_fill subroutine
 
 ; *****************************************************************************
 ; layer_circ - Create a circle on layer made of 1.0
@@ -55,19 +53,47 @@ layer_rect:
         ret                                 ; end of layer_rect subroutine
 
 ; *****************************************************************************
-; layer_sub - Subtract one layer from the other
+; layer_sub - Subtract one layer from the other. A = A - B
 ;
-; TODO:
+; rax (arg) - layer size
+; rdi (arg) - layer A
+; rsi (arg) - layer B
 ; *****************************************************************************
 layer_sub:
-        nop                                 ; TODO:
+        push rcx                            ; save rcx
+        xor rcx, rcx                        ; i = 0
+.loop_i:
+        fld dword [rsi + (rcx * 4)]         ; ST0 = A[i]
+        fld dword [rdi + (rcx * 4)]         ; ST0 = B[i], ST1=A[i]
+        fsubp                               ; ST0 = A[i] - B[i]
+        fstp dword [rdi + (rcx * 4)]        ; A[i] = A[i] - B[i]
+.next_i:
+        inc rcx                             ; i++
+        cmp rcx, rax                        ; test
+        jl .loop_i                          ; while (i < layer_size)
+.end:
+        pop rcx                             ; restore rcx
         ret                                 ; end of layer_sub subroutine
 
 ; *****************************************************************************
-; layer_add - Add one layer to the other
+; layer_add - Add one layer to the other. A = A + B
 ;
-; TODO:
+; rax (arg) - layer size
+; rdi (arg) - layer A
+; rsi (arg) - layer B
 ; *****************************************************************************
 layer_add:
-        nop                                 ; TODO:
+        push rcx                            ; save rcx
+        xor rcx, rcx                        ; x = 0
+.loop_i:
+        fld dword [rsi + (rcx * 4)]         ; ST0 = A[i]
+        fld dword [rdi + (rcx * 4)]         ; ST0 = B[i], ST1=A[i]
+        faddp                               ; ST0 = A[i] + B[i]
+        fstp dword [rdi + (rcx * 4)]        ; A[i] = A[i] + B[i]
+.next_i:
+        inc rcx                             ; i++
+        cmp rcx, rax                        ; test
+        jl .loop_i                          ; while (i < layer_size)
+.end:
+        pop rcx                             ; restore rcx
         ret                                 ; end of layer_add subroutine
