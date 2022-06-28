@@ -8,8 +8,8 @@
         PPM_P3:     equ 0x3350              ; P3
         PPM_P6:     equ 0x3650              ; P6
         PPM_EXT:    equ 0x6D70702E          ; .ppm
-        PPM_FMODE:  equ 0o102               ; O_CREAT
-        PPM_FPERMS: equ 0o666               ; rw-rw-rw-
+        FMODE:      equ 0o102               ; O_CREAT
+        FPERMS:     equ 0o666               ; rw-rw-rw-
         SPACES_3:   equ 0x202020            ; 3 blanks
         F255:       equ __float32__(255.0)  ; float 255 (0x437F0000)
 
@@ -48,12 +48,11 @@ ppm_new:
 
         mov rax, SYS_OPEN                   ; command
         mov rdi, file_name                  ; destination pointer
-        mov rsi, PPM_FMODE                  ; file mode
-        mov rdx, PPM_FPERMS                 ; file permissions
+        mov rsi, FMODE                      ; file mode
+        mov rdx, FPERMS                     ; file permissions
         syscall                             ; call kernel
 
         mov [fd], rax                       ; store file descriptor
-
         pop rsi                             ; restore rsi
         pop rax                             ; restore rax
         ret                                 ; end of ppm_new subroutine
@@ -199,12 +198,12 @@ ppm_fmatrix:
         mov rdx, rax                        ; store file buffer length
 .next_x:
         push rsi                            ; save pointer to matrix
-        push rcx
+        push rcx                            ; save x counter
         mov rax, SYS_WRITE                  ; command
         mov rdi, [fd]                       ; file descriptor
         mov rsi, file_buffer                ; pointer to string
         syscall                             ; call kernel
-        pop rcx
+        pop rcx                             ; restore x counter
         pop rsi                             ; restore pointer to matrix
 
         pop rax                             ; restore PPM arguments
