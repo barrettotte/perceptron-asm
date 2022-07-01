@@ -35,15 +35,20 @@ main:
         mov rdi, test_layer_a               ;
         call layer_fill                     ; 
 
-        mov rax, LAYER_SIZE
-        mov rbx, __float32__(0.7) ; 0x3F000000
-        mov rdi, test_layer_b
-        call layer_fill
+        ; mov rax, LAYER_SIZE
+        ; mov rbx, __float32__(0.7) ; 0x3F000000
+        ; mov rdi, test_layer_b
+        ; call layer_fill
 
-        mov rax, LAYER_SIZE
-        mov rdi, test_layer_a
-        mov rsi, test_layer_b
-        call layer_add
+        ; mov rax, LAYER_SIZE
+        ; mov rdi, test_layer_a
+        ; mov rsi, test_layer_b
+        ; call layer_add
+
+        mov rax, __float32__(1.0)           ; fill value
+        mov rdi, test_layer_a               ; pointer to layer
+        mov rbx, 0x140507090F               ; 9x16 rect at (1,1)
+        call layer_rect                     ; fill layer with rect
 
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte

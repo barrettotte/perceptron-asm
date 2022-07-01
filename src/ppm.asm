@@ -61,10 +61,9 @@ ppm_new:
 ; ppm_header - Add header to PPM file
 ;
 ; rax (arg) - packed field of PPM arguments
-;             0:7  - m rows of matrix
-;             8:15 - n cols of matrix
-;             16:31 - unused
-;             32:63 - unused
+;             0:7   - m rows of matrix
+;             8:15  - n cols of matrix
+;             16:63 - unused
 ; *****************************************************************************
 ppm_header:
         push rax                            ; save rax
@@ -118,8 +117,7 @@ ppm_header:
 ; rax (arg) - packed field of PPM arguments
 ;             0:7  - m rows of matrix
 ;             8:15 - n cols of matrix
-;             16:31 - unused
-;             32:63 - unused
+;             16:63 - unused
 ; rdi (arg) - pointer to base file name string
 ; rsi (arg) - pointer to matrix of floats
 ; *****************************************************************************
