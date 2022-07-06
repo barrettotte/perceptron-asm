@@ -47,7 +47,7 @@ main:
 
         mov rax, __float32__(1.0)           ; fill value
         mov rdi, test_layer_a               ; pointer to layer
-        mov rbx, 0x140507090F               ; 9x16 rect at (1,1)
+        mov rbx, 0x1403010905               ; 5x9 rect at (1,3)
         call layer_rect                     ; fill layer with rect
 
         mov rax, LAYER_LEN                  ; PPM width

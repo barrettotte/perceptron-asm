@@ -3,4 +3,4 @@
         SYS_CLOSE:    equ 3
         SYS_EXIT:     equ 60
 
-        CRLF:         equ 0x0A0D            ; CR LF
+        CRLF:         equ 0x0A0D

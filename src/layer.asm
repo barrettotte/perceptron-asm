@@ -15,11 +15,11 @@
         section .text
 
 ; *****************************************************************************
-; layer_fill - Reset all layer elements to given floating point value
+; layer_fill - Reset all layer elements to given value
 ;
 ; rdi (arg) - pointer to layer
 ; rax (arg) - layer size
-; ebx (arg) - floating point value
+; ebx (arg) - value to fill with
 ; *****************************************************************************
 layer_fill:
         push rcx                            ; save rcx
@@ -38,12 +38,13 @@ layer_fill:
 ; layer_circ - Create a circle on layer filled with given value
 ;
 ; rdi (arg) - pointer to layer
-; rax (arg) - value to fill with
+; eax (arg) - value to fill with
 ; rbx (arg) - packed field
-;             0:7   - circle radius
-;             8:15  - unused
-;             16:31 - circle center x position
-;             32:63 - circle center y position
+;             [0]  0:7   - circle.radius
+;             [1]  8:15  - unused
+;             [2]  16:23 - circle.x
+;             [3]  24:31 - circle.y
+;             [4]  32:39 - layer_length
 ; *****************************************************************************
 layer_circ:
         nop ; TODO:
@@ -53,16 +54,14 @@ layer_circ:
 ; layer_rect - Create a rectangle on layer filled with given value
 ;
 ; rdi (arg) - pointer to layer
-; rax (arg) - packed field
-;             0:31  - value to fill with
-;             32:63 - unused
+; eax (arg) - value to fill with
 ; rbx (arg) - packed field
-;             0:7   - rect.width
-;             8:15  - rect.length
-;             16:23 - rect.x
-;             24:31 - rect.y
-;             32:39 - layer_length
-;             40:63 - unused
+;             [0]  0:7   - rect.width
+;             [1]  8:15  - rect.length
+;             [2]  16:23 - rect.x
+;             [3]  24:31 - rect.y
+;             [4]  32:39 - layer_length
+;                  40:63 - unused
 ; *****************************************************************************
 layer_rect:
         push rdi                            ; save rdi
@@ -82,24 +81,29 @@ layer_rect:
         pop rax                             ; restore fill value
 
         mov rdx, rbx                        ; load arguments
-        shr rdx, 24                         ; move to 4th argument rect.y
-        and rdx, 0xFF                       ; isolate rect.y, y = rect.y
+        shr rdx, 24                         ; move to 4th argument
+        and rdx, 0xFF                       ; isolate rect.y
 .loop_y:
         mov rcx, rbx                        ; load arguments
         shr rcx, 16                         ; move to 3rd argument
         and rcx, 0xFF                       ; isolate rect.x
-
         push rcx                            ; save rect.x
         shl rcx, 2                          ; dword offset of rect.x
         add rdi, rcx                        ; increment layer by offset
-        pop rcx                             ; restore rect.x
+        pop rcx                             ; x = rect.x
 .loop_x:
         push rbx                            ; save arguments
+        push rcx                            ; save x
+        mov rcx, rbx                        ; load arguments
+        shr rcx, 16                         ; move to 3rd argument
+        and rcx, 0xFF                       ; isolate rect.x
         and rbx, 0xFF                       ; isolate rect.width
-        cmp rcx, rbx                        ; test
+        add rbx, rcx                        ; rect.x + rect.width
+        pop rcx                             ; restore x
+        cmp rcx, rbx                        ; test x >= (rect.x + rect.width)
         pop rbx                             ; restore arguments
-
         jge .next_x                         ; skip over fill
+
         mov dword [rdi], eax                ; layer[y][x] = fill
 .next_x:
         add rdi, 4                          ; increment matrix pointer
@@ -115,11 +119,15 @@ layer_rect:
         inc rdx                             ; y++
 
         push rbx                            ; save arguments
-        shr rbx, 8                          ; move to 2nd argument
-        and rbx, 0xFF                       ; isolate rect.length
-        cmp rdx, rbx                        ; test
+        mov rcx, rbx                        ; load arguments
+        shr rcx, 8                          ; move to 2nd argument
+        and rcx, 0xFF                       ; isolate rect.length
+        shr rbx, 24                         ; move to 4th argument
+        and rbx, 0xFF                       ; isolate rect.y
+        add rcx, rbx                        ; rect.y + rect.length
+        cmp rdx, rcx                        ; test
         pop rbx                             ; restore arguments
-        jge .end                            ; if (y >= rect.y) break
+        jge .end                            ; if (y >= (rect.y + rect.length)) break
 
         push rbx                            ; save arguments
         shr rbx, 32                         ; move to 5th argument
