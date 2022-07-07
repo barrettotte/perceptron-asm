@@ -7,6 +7,10 @@
         %include "inc/common.inc"
 
         section .data
+x0:             db 1                        ; initial x
+y0:             db 1                        ; initial y
+x1:             db 1                        ; terminal x
+y1:             db 1                        ; terminal y
 
         section .rodata
 
@@ -42,12 +46,34 @@ layer_fill:
 ; rbx (arg) - packed field
 ;             [0]  0:7   - circle.radius
 ;             [1]  8:15  - unused
-;             [2]  16:23 - circle.x
-;             [3]  24:31 - circle.y
+;             [2]  16:23 - circle.cx
+;             [3]  24:31 - circle.cy
 ;             [4]  32:39 - layer_length
 ; *****************************************************************************
 layer_circ:
+        push rdi                            ; save rdi
+        push rcx                            ; save rcx
+        push rdx                            ; save rdx
+
+        ; x0 = circle.cx - circle.radius
+        ; y0 = circle.cy - circle.radius
+        ; x1 = circle.cx + circle.radius
+        ; y1 = circle.cy + circle.radius
+
+        ;  for (int y = y0; y <= y1; y++) {
+        ;    for (int x = x0; x <= x1; x++) {
+        ;      dx = x - cx;
+        ;      dy = y - cy;
+        ;      if (dx^2 + dy^2 <= r^2)
+        ;        layer[y][x] = val;
+        ;    }
+        ;  }
+
         nop ; TODO:
+.end:
+        pop rdx                             ; restore rdx
+        pop rcx                             ; restore rcx
+        pop rdi                             ; restore rdi
         ret                                 ; end of layer_circ subroutine
 
 ; *****************************************************************************
@@ -62,79 +88,60 @@ layer_circ:
 ;             [3]  24:31 - rect.y
 ;             [4]  32:39 - layer_length
 ;                  40:63 - unused
+;
+;             ex: 0x1402040A05  
+;                 5x10 rect at (2,4) with layer length 20
 ; *****************************************************************************
 layer_rect:
         push rdi                            ; save rdi
         push rcx                            ; save rcx
         push rdx                            ; save rdx
 
-        push rax                            ; save fill value
         mov rcx, rbx                        ; load arguments
-        shr rcx, 24                         ; move to 4th argument
-        and rcx, 0xFF                       ; isolate rect.y
+        shr rcx, 16                         ; clear lower arguments
+        and rcx, 0xFFFF                     ; isolate (rect.x, rect.y)
+        mov word [x0], cx                   ; save x0 = rect.x, y0 = rect.y
+
+        mov rdx, rbx                        ; load arguments
+        and rdx, 0xFFFF                     ; isolate (rect.width, rect.length)
+        add rdx, rcx                        ; (rect.width + rect.x, rect.length + rect.y)
+        sub rdx, 0x0101                     ; (rect.width + rect.x - 1, rect.length + rect.y - 1)
+        mov word [x1], dx                   ; save x1 = (rect.width + rect.x - 1, rect.length + rect.y - 1)
+
+        xor rcx, rcx
+        mov cl, byte [y0]                   ; y = y0
+.loop_y:
+        xor rdx, rdx
+        mov dl, byte [x0]                   ; x = x0
+.loop_x:
+        push rcx                            ; save y
+        push rax                            ; save fill value
         mov rax, rbx                        ; load arguments
         shr rax, 32                         ; move to 5th argument
         and rax, 0xFF                       ; isolate layer_length
-        mul rcx                             ; offset = (rect.y * layer_length)
-        shl rax, 2                          ; offset = 4 * (rect.y * layer_length)
-        add rdi, rax                        ; offset to first layer element
+        push rdx                            ; save x
+        mul rcx                             ; (layer_length * y)
+        pop rdx                             ; restore x
+        add rax, rdx                        ; (layer_length * y) + x
+        mov rcx, rax                        ; i = (layer_length * y) + x
+.fill:
         pop rax                             ; restore fill value
-
-        mov rdx, rbx                        ; load arguments
-        shr rdx, 24                         ; move to 4th argument
-        and rdx, 0xFF                       ; isolate rect.y
-.loop_y:
-        mov rcx, rbx                        ; load arguments
-        shr rcx, 16                         ; move to 3rd argument
-        and rcx, 0xFF                       ; isolate rect.x
-        push rcx                            ; save rect.x
-        shl rcx, 2                          ; dword offset of rect.x
-        add rdi, rcx                        ; increment layer by offset
-        pop rcx                             ; x = rect.x
-.loop_x:
-        push rbx                            ; save arguments
-        push rcx                            ; save x
-        mov rcx, rbx                        ; load arguments
-        shr rcx, 16                         ; move to 3rd argument
-        and rcx, 0xFF                       ; isolate rect.x
-        and rbx, 0xFF                       ; isolate rect.width
-        add rbx, rcx                        ; rect.x + rect.width
-        pop rcx                             ; restore x
-        cmp rcx, rbx                        ; test x >= (rect.x + rect.width)
-        pop rbx                             ; restore arguments
-        jge .next_x                         ; skip over fill
-
-        mov dword [rdi], eax                ; layer[y][x] = fill
+        mov dword [edi + (ecx * 4)], eax    ; layer[y][x] = fill
+        pop rcx                             ; restore y
 .next_x:
-        add rdi, 4                          ; increment matrix pointer
-        inc rcx                             ; x++
-
-        push rbx                            ; save arguments
-        shr rbx, 32                         ; move to 5th argument
-        and rbx, 0xFF                       ; isolate layer_length
-        cmp rcx, rbx                        ; test
-        pop rbx                             ; restore arguments
-        jl .loop_x                          ; while (x < layer_length)
+        inc dl                              ; x++
+        push rax                            ; save fill value
+        mov al, byte [x1]                   ; load x1
+        cmp dl, al                          ; test
+        pop rax                             ; restore fill value
+        jle .loop_x                         ; while (x <= x1)
 .next_y:
-        inc rdx                             ; y++
-
-        push rbx                            ; save arguments
-        mov rcx, rbx                        ; load arguments
-        shr rcx, 8                          ; move to 2nd argument
-        and rcx, 0xFF                       ; isolate rect.length
-        shr rbx, 24                         ; move to 4th argument
-        and rbx, 0xFF                       ; isolate rect.y
-        add rcx, rbx                        ; rect.y + rect.length
-        cmp rdx, rcx                        ; test
-        pop rbx                             ; restore arguments
-        jge .end                            ; if (y >= (rect.y + rect.length)) break
-
-        push rbx                            ; save arguments
-        shr rbx, 32                         ; move to 5th argument
-        and rbx, 0xFF                       ; isolate layer_length
-        cmp rdx, rbx                        ; test
-        pop rbx                             ; restore arguments
-        jl .loop_y                          ; while (y < layer_length)
+        inc cl                              ; y++
+        push rax                            ; save fill value
+        mov al, byte [y1]                   ; load y1
+        cmp cl, al                          ; test
+        pop rax                             ; restore fill value
+        jle .loop_y                         ; while (y <= y1)
 .end:
         pop rdx                             ; restore rdx
         pop rcx                             ; restore rcx
