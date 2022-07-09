@@ -4,6 +4,8 @@
         global layer_circ
         global layer_rect
 
+        extern clampz
+
         %include "inc/common.inc"
 
         section .data
@@ -11,13 +13,13 @@
         section .rodata
 
         section .bss
+length:         resb 1                      ; layer length
 x0:             resb 1                      ; initial x
 y0:             resb 1                      ; initial y
 x1:             resb 1                      ; terminal x
 y1:             resb 1                      ; terminal y
-xd:             resw 1                      ; delta x
-yd:             resw 1                      ; delta y
-rsq:            resw 1                      ; radius squared
+ydsq:           resw 1                      ; (delta y)^2
+rsq:            resw 1                      ; radius^2
 fill:           resd 1                      ; fill value
 
         section .text
@@ -52,6 +54,9 @@ layer_fill:
 ;             [1]  8:15  - layer_length
 ;             [2]  16:23 - circ.cx
 ;             [3]  24:31 - circ.cy
+;
+;             ex: 0x07051403
+;                 3 radius circle at (5,7) with layer length 20
 ; *****************************************************************************
 layer_circ:
         push rdi                            ; save rdi
@@ -59,65 +64,111 @@ layer_circ:
         push rcx                            ; save rcx
         push rdx                            ; save rdx
 
+        mov rcx, rbx                        ; load arguments
+        shr rcx, 8                          ; move to 2nd argument
+        and rcx, 0xFF                       ; isolate layer_length
+        mov byte [length], cl               ; save layer_length
         mov dword [fill], eax               ; save fill value
 
-        mov rcx, rbx                        ; load arguments
-        shr rcx, 16                         ; clear lower arguments
-        and rcx, 0xFFFF                     ; isolate (circ.cx, circ.y)
-        push rcx                            ; save (circ.cx, circ.y)
-        mov rdx, rbx                        ; load arguments
-        and rdx, 0xFF                       ; isolate circ.radius
-        push rdx                            ; save circ.radius for y calc
-
-        sub rcx, rdx                        ; x0 = circ.cx - circ.radius
-        shl rdx, 2                          ; move circ.radius
-        sub rcx, rdx                        ; y0 = circ.cy - circ.radius 
-        mov word [x0], cx                   ; save (x0, y0)
-
-        pop rdx                             ; restore circ.radius
-        pop rcx                             ; restore (circ.cx, circ.y)
-        add rcx, rdx                        ; x1 = circ.cx + circ.radius
-        shl rdx, 2                          ; move circ.radius for y calc
-        add rcx, rdx                        ; y1 = circ.cx + circ.radius
-        mov word [x1], cx                   ; save (x1, y1)
-
         mov rax, rbx                        ; load arguments
-        xor rax, 0xFF                       ; isolate circ.radius
-        mov rdx, rax                        ; load circ.radius operand
-        mul rdx                             ; circ.radius^2
+        and rax, 0xFF                       ; isolate circ.radius
+        mov rcx, rax                        ; save circ.radius
+        mul rcx                             ; circ.radius^2
         mov word [rsq], ax                  ; save circ.radius^2
 
-        xor rdx, rdx                        ; y = 0
-        mov dl, byte [y1]                   ; y = y0
+        mov rax, rbx                        ; load arguments
+        shr rax, 16                         ; move to 3rd argument
+        and rax, 0xFF                       ; isolate circ.cx        
+        push rax                            ; save circ.cx
+        sub rax, rcx                        ; circ.cx - circ.radius
+
+        push rbx                            ; save arguments
+        movzx rbx, byte [length]            ; load layer_length
+        dec rbx                             ; layer_length - 1
+        call clampz                         ; clamp x0 between (circ.cx - circ.radius, layer_length - 1)
+        mov byte [x0], al                   ; x0 = clampz(circ.cx - circ.radius, layer_length - 1)
+        mov rdx, rbx                        ; save layer_length - 1
+        pop rbx                             ; restore arguments
+
+        pop rax                             ; restore circ.cx
+        add rax, rcx                        ; circ.cx + circ.radius
+        push rbx                            ; save arguments
+        mov rbx, rdx                        ; load layer_length-1
+        call clampz                         ; clamp x1 between (circ.cx + circ.radius, layer_length - 1)
+        mov byte [x1], al                   ; x1 = clampz(circ.cx + circ.radius, layer_length - 1)
+        pop rbx                             ; restore arguments
+
+        push rbx                            ; save arguments
+        mov rax, rbx                        ; load arguments
+        shr rax, 24                         ; move to 4th argument
+        and rax, 0xFF                       ; isolate circ.cy
+        push rax                            ; save circ.y
+
+        sub rax, rcx                        ; circ.y - circ.radius
+        mov rbx, rdx                        ; load layer_length-1
+        call clampz                         ; clamp y0 between (circ.cy - circ.radius, layer_length - 1)
+        mov byte [y0], al                   ; y0 = clampz(circ.cx - circ.radius, layer_length - 1)
+.check:
+        pop rax                             ; restore circ.y
+        add rax, rcx                        ; circ.y + circ.radius
+        mov rbx, rdx                        ; load layer_length-1
+        call clampz                         ; clamp y1 between (circ.cy + circ.radius, layer_length - 1)
+        mov byte [y1], al                   ; y1 = clampz(circ.cx + circ.radius, layer_length - 1)
+
+        pop rbx                             ; restore arguments
+        movzx rdx, byte [y0]                ; y = y0
 .loop_y:
         push rdx                            ; save y
         mov rax, rbx                        ; load arguments
         shr rax, 24                         ; move to 4th argument
-        xor rax, 0xFF                       ; isolate circ.cy
+        and rax, 0xFF                       ; isolate circ.cy
         sub rdx, rax                        ; calc yd = y - circ.cy
+
         mov rax, rdx                        ; load yd operand
-        mul rdx                             ; calc yd^2
-        mov word [yd], dx                   ; save yd^2
+        imul rdx                            ; calc yd^2
+        mov word [ydsq], ax                 ; save yd^2
         pop rdx                             ; restore y
 
-        xor rcx, rcx                        ; x = 0
-        mov cl, byte [x1]                   ; x = x0
+        movzx rcx, byte [x0]                 ; x = x0
 .loop_x:
-        ; xd = x - cx
-        ; xd^2
-        
-        ; (if xd^2 + yd^2 <= circ.radius^2)
-        ;   i = (layer_length * y) + x
-        ;   layer[i] = val
+        push rdx                            ; save y
+        mov rax, rbx                        ; load arguments
+        shr rax, 16                         ; move to 3rd argument
+        and rax, 0xFF                       ; isolate circ.cx
+        push rcx                            ; save x
+        sub rcx, rax                        ; calc xd = x - circ.cx
+        mov rax, rcx                        ; load xd operand
+        imul rcx                            ; calc xd^2
+        pop rcx                             ; restore x
+
+        movzx rdx, word [ydsq]              ; load yd^2
+        add rax, rdx                        ; yd^2 + xd^2
+        movzx rdx, word [rsq]               ; load circ.radius^2
+        cmp rax, rdx                        ; test
+        pop rdx                             ; restore y
+        jg .next_x                          ; if (xd^2 + yd^2 <= circ.radius^2) dont fill
+
+        push rdx                            ; save y
+        movzx rax, byte [length]            ; load layer_length
+        mul rdx                             ; i = layer_length * y
+        add rax, rcx                        ; i = (layer_length * y) + x
+        pop rdx                             ; restore y
+
+        push rcx                            ; save x
+        mov rcx, rax                        ; load i
+        mov eax, dword [fill]               ; load fill value
+        mov dword [rdi + (rcx * 4)], eax    ; layer[i] = fill value
+        pop rcx                             ; restore x
 .next_x:
         inc rcx                             ; x++
-        ; cmp x,x0
-        ; jle .loop_x
+        movzx rax, byte [x1]                ; load x1
+        cmp rcx, rax                        ; test
+        jle .loop_x                         ; while (x <= x1)
 .next_y:
-        pop rdx                             ; restore y
         inc rdx                             ; y++
-        ; cmp y,y0
-        ; jle .loop_y
+        movzx rax, byte [y1]                ; load y1
+        cmp rdx, rax                        ; test
+        jle .loop_y                         ; while (y <= y1)
 .end:
         pop rdx                             ; restore rdx
         pop rcx                             ; restore rcx
@@ -139,7 +190,7 @@ layer_circ:
 ;                  40:63 - unused
 ;
 ;             ex: 0x1402040A05  
-;                 5x10 rect at (2,4) with layer length 20
+;                 5x10 rect at (4,2) with layer length 20
 ; *****************************************************************************
 layer_rect:
         push rdi                            ; save rdi
@@ -147,7 +198,12 @@ layer_rect:
         push rcx                            ; save rcx
         push rdx                            ; save rdx
 
+        mov rcx, rbx                        ; load arguments
+        shr rcx, 32                         ; move to 5th argument
+        and rcx, 0xFF                       ; isolate layer_length
+        mov byte [length], cl               ; save layer_length
         mov dword [fill], eax               ; save fill value
+
         mov rcx, rbx                        ; load arguments
         shr rcx, 16                         ; clear lower arguments
         and rcx, 0xFFFF                     ; isolate (rect.x, rect.y)
@@ -159,35 +215,30 @@ layer_rect:
         sub rdx, 0x0101                     ; (rect.width + rect.x - 1, rect.length + rect.y - 1)
         mov word [x1], dx                   ; x1 = (rect.width + rect.x - 1), y1 = (rect.length + rect.y - 1)
 
-        xor rcx, rcx                        ; y = 0
-        mov cl, byte [y0]                   ; y = y0
+        movzx rcx, byte [y0]                ; y = y0
 .loop_y:
-        xor rdx, rdx                        ; x = 0
-        mov dl, byte [x0]                   ; x = x0
+        movzx rdx, byte [x0]                ; x = x0
 .loop_x:
-        mov rax, rbx                        ; load arguments
-        shr rax, 32                         ; move to 5th argument
-        and rax, 0xFF                       ; isolate layer_length
-
         push rcx                            ; save y
         push rdx                            ; save x
+        movzx rax, byte [length]            ; load layer_length
         mul rcx                             ; (layer_length * y)
         pop rdx                             ; restore x
+
         add rax, rdx                        ; (layer_length * y) + x
         mov rcx, rax                        ; i = (layer_length * y) + x
-
         mov eax, dword [fill]               ; load fill value
         mov dword [edi + (ecx * 4)], eax    ; layer[y][x] = fill value
         pop rcx                             ; restore y
 .next_x:
-        inc dl                              ; x++
-        mov al, byte [x1]                   ; load x1
-        cmp dl, al                          ; test
+        inc rdx                             ; x++
+        movzx rax, byte [x1]                ; load x1
+        cmp rdx, rax                        ; test
         jle .loop_x                         ; while (x <= x1)
 .next_y:
-        inc cl                              ; y++
-        mov al, byte [y1]                   ; load y1
-        cmp cl, al                          ; test
+        inc rcx                             ; y++
+        movzx rax, byte [y1]                ; load y1
+        cmp rcx, rax                        ; test
         jle .loop_y                         ; while (y <= y1)
 .end:
         pop rdx                             ; restore rdx

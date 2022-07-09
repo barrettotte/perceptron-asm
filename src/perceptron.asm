@@ -46,12 +46,15 @@ main:
         ; mov rsi, test_layer_b
         ; call layer_add
 
+        ; mov rax, __float32__(1.0)           ; fill value
+        ; mov rdi, test_layer_a               ; pointer to layer
+        ; mov rbx, 0x1402040A05               ; 5x10 rect at (4,2) with layer length 20
+        ; call layer_rect                     ; fill layer with rect
+
         mov rax, __float32__(1.0)           ; fill value
         mov rdi, test_layer_a               ; pointer to layer
-        mov rbx, 0x1402040A05               ; (2,4) 5x10 rect (20 layer length)
-        call layer_rect                     ; fill layer with rect
-
-        mov rax, __float32__(1.0)
+        mov rbx, 0x07051403                 ; 3 radius circle at (5,7) with layer length 20
+        call layer_circ                     ; fill layer with circle
 
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte

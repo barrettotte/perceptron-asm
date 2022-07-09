@@ -1,3 +1,4 @@
+        global clampz
         global count_digits
         global itoa_10
         global strlen
@@ -97,3 +98,26 @@ strlen:
         pop rdi                             ; restore rdi
         pop rcx                             ; restore rcx
         ret                                 ; end strlen subroutine
+
+; *****************************************************************************
+; clampz - Clamp value between 0 to max
+;
+; rax (arg) - value to clamp
+; rbx (arg) - max value
+; rax (ret) - clamped value
+; *****************************************************************************
+clampz:
+        push rbx                            ; save rbx
+        cmp rax, 0                          ; test min
+        jl .min                             ; if (rax < 0) then clamp
+        cmp rax, rbx                        ; test max
+        jg .max                             ; if (rax > max) then clamp
+        jmp .end                            ; leave
+.min:
+        xor rax, rax                        ; clamp value to 0
+        jmp .end                            ; leave
+.max:
+        mov rax, rbx                        ; clamp value to max
+.end:
+        pop rbx                             ; restore rbx
+        ret                                 ; end clampz subroutine
