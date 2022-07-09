@@ -51,11 +51,51 @@ main:
         ; mov rbx, 0x1402040A05               ; 5x10 rect at (4,2) with layer length 20
         ; call layer_rect                     ; fill layer with rect
 
-        mov rax, __float32__(1.0)           ; fill value
-        mov rdi, test_layer_a               ; pointer to layer
-        mov rbx, 0x07051403                 ; 3 radius circle at (5,7) with layer length 20
-        call layer_circ                     ; fill layer with circle
+        ; mov rax, __float32__(1.0)           ; fill value
+        ; mov rdi, test_layer_a               ; pointer to layer
+        ; mov rbx, 0x07051404                 ; 4 radius circle at (5,7) with layer length 20
+        ; call layer_circ                     ; fill layer with circle
 
+        ; rdrand eax
+        mov rax, TEST_SEED
+        call srand
+
+        xor rcx, rcx
+.loop_test:
+        mov rdx, 0x1400000000               ; 5x10 rect at (4,2) with layer length 20
+
+        mov rax, 10
+        call rand32_range
+        add dh, al
+
+        mov rax, 10
+        call rand32_range
+        add dl, al
+
+        push rcx
+        xor rcx, rcx
+
+        mov rax, 10
+        call rand32_range
+        add cl, al
+
+        mov rax, 10
+        call rand32_range
+        add ch, al
+
+        shl rcx, 16
+        add rdx, rcx
+        pop rcx
+
+        mov rax, __float32__(1.0)           ; fill value
+        mov rbx, rdx                        ; rect args
+        mov rdi, test_layer_a               ; pointer to layer
+        call layer_rect                     ; fill layer with rect
+
+        inc rcx
+        cmp rcx, 2
+        jl .loop_test
+.write:
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte
         or rax, LAYER_LEN                   ; PPM height in 1st byte
@@ -63,12 +103,6 @@ main:
         mov rsi, test_layer_a
         mov rdi, test_file_name             ; pointer to file name
         call ppm_fmatrix                    ; save float matrix to PPM file
-
-        ; rdrand eax
-        ; mov rax, TEST_SEED
-        ; call srand
-        ; mov rax, 10
-        ; call rand32_range
 
         ; int count = 0;
         ;

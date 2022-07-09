@@ -55,8 +55,8 @@ layer_fill:
 ;             [2]  16:23 - circ.cx
 ;             [3]  24:31 - circ.cy
 ;
-;             ex: 0x07051403
-;                 3 radius circle at (5,7) with layer length 20
+;             ex: 0x07051404
+;                 4 radius circle at (5,7) with layer length 20
 ; *****************************************************************************
 layer_circ:
         push rdi                            ; save rdi
@@ -108,7 +108,7 @@ layer_circ:
         mov rbx, rdx                        ; load layer_length-1
         call clampz                         ; clamp y0 between (circ.cy - circ.radius, layer_length - 1)
         mov byte [y0], al                   ; y0 = clampz(circ.cx - circ.radius, layer_length - 1)
-.check:
+
         pop rax                             ; restore circ.y
         add rax, rcx                        ; circ.y + circ.radius
         mov rbx, rdx                        ; load layer_length-1
@@ -157,7 +157,7 @@ layer_circ:
         push rcx                            ; save x
         mov rcx, rax                        ; load i
         mov eax, dword [fill]               ; load fill value
-        mov dword [rdi + (rcx * 4)], eax    ; layer[i] = fill value
+        mov dword [edi + (ecx * 4)], eax    ; layer[i] = fill value
         pop rcx                             ; restore x
 .next_x:
         inc rcx                             ; x++

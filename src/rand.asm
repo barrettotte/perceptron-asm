@@ -43,11 +43,13 @@ rand32:
 rand32_range:
         push rbx                            ; save rbx
         push rdx                            ; save rdx
+
         mov ebx, eax                        ; max value
         call rand32                         ; generate random
         xor edx, edx                        ; clear
         div ebx                             ; clamp to range
         mov eax, edx                        ; remainder
+
         pop rdx                             ; restore rdx
         pop rbx                             ; restore rbx
         ret                                 ; end rand32_range subroutine
