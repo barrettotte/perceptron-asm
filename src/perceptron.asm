@@ -19,12 +19,13 @@
 test_layer_a:   times LAYER_SIZE dd __float32__(0.0)
 test_layer_b:   times LAYER_SIZE dd __float32__(0.0)
 
+weights:        times LAYER_SIZE dw 0       ; weight matrix
+inputs:         times LAYER_SIZE dw 0       ; input matrix 
+
         section .rodata
 test_file_name: db "temp", 0x00
 
         section .bss
-weights:        resw LAYER_SIZE             ; weight matrix
-inputs:         resw LAYER_SIZE             ; input matrix 
 
         section .text
 _start:                                     ; ***** main entry *****
@@ -49,6 +50,8 @@ main:
         mov rdi, test_layer_a               ; pointer to layer
         mov rbx, 0x1402040A05               ; (2,4) 5x10 rect (20 layer length)
         call layer_rect                     ; fill layer with rect
+
+        mov rax, __float32__(1.0)
 
         mov rax, LAYER_LEN                  ; PPM width
         shl rax, 8                          ; move width to 2nd byte
