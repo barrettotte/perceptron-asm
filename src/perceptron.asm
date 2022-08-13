@@ -123,64 +123,34 @@ train:
         mov rax, __float32__(1.0)           ; fill value
         mov rbx, LAYER_LEN                  ; 
         call layer_randrect                 ; generate random rectangle
+.rect_activate:
+;         mov rsi, inputs                     ; load pointer to inputs matrix
+;         call feed_fwd                       ; calculate weighted sum
+;         cmp rax, BIAS                       ; check if activated
+;         jle .circ                           ; if (feed_fwd <= BIAS) then rect inactive
 
-; .circ:
-;         mov rax, LAYER_SIZE                 ; load layer size
-;         push rbx                            ; save adj
-;         mov rbx, __float32__(0.0)           ; load fill value
-;         mov rdi, inputs                     ; load pointer to inputs matrix
-;         call layer_fill                     ; clear layer
-;         pop rbx                             ; restore adj
-; .circ_cx:
-;         mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
-;         call rand32_range                   ; generate random number
-;         mov byte [tmp_x], al                ; store circ.cx = rand(0, LAYER_LEN-1)
-; .circ_cy:
-;         mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
-;         call rand32_range                   ; generate random number
-;         mov byte [tmp_y], al                ; store circ.cy = rand(0, LAYER_LEN-1)
-; .circ_r1:
-;         movzx rax, byte [tmp_x]             ; tmp = circ.cx
-;         movzx rdx, byte [tmp_y]             ; load circ.cy
-;         cmp rax,rdx                         ; check clamp
-;         jle .circ_r2                        ; if (tmp <= circ.cy); no clamp needed
-;         mov rax, rdx                        ; clamp tmp to circ.cy
-; .circ_r2:
-;         mov rdx, LAYER_LEN                  ;
-;         sub dl, byte [tmp_x]                ; LAYER_LEN - circ.cx
-;         cmp rax, rdx                        ; check clamp
-;         jle .circ_r3                        ; if (tmp <= LAYER_LEN - circ.cx); no clamp needed
-;         mov rax, rdx                        ; clamp tmp to LAYER_LEN - circ.cx
-; .circ_r3:
-;         mov rdx, LAYER_LEN                  ;
-;         sub dl, byte [tmp_y]                ; LAYER_LEN - circ.cy
-;         cmp rax, rdx                        ; check clamp
-;         jle .circ_r4                        ; if (tmp <= LAYER_LEN - circ.cy); no clamp needed
-;         mov rax, rdx                        ; clamp tmp to LAYER_LEN - circ.cy
-; .circ_r4:
-;         cmp rax, 2                          ; check clamp
-;         jge .circ_r5                        ; if (tmp >= 2); no clamp needed
-;         mov rax, 2                          ; clamp tmp to 2
-; .circ_r5:
-;         dec rax                             ; set range to [0, tmp-1]
-;         call rand32_range                   ; generate random number
-;         inc rax                             ; adjust random number to range [1, tmp)
-;         mov byte [tmp_l], al                ; save circ.r
-; .circ_draw:
-;         push rbx                            ; save adj
-;         xor rbx, rbx                        ; clear circ args
-;         mov bl, byte [tmp_y]                ; args[0] = circ.cy
-;         shl rbx, 8                          ; move to next arg
-;         mov bl, byte [tmp_x]                ; args[1] = circ.cx
-;         shl rbx, 8                          ; move to next arg
-;         mov bl, LAYER_LEN                   ; args[2] = layer length
-;         shl rbx, 8                          ; move to next arg
-;         mov bl, byte [tmp_l]                ; args[3] = circ.r
-;         mov rax, __float32__(1.0)           ; load fill value
-;         mov rdi, inputs                     ; load pointer to layer
-;         call layer_circ                     ; generate circle in layer
-;         pop rbx                             ; restore adj
-; .circ_activate:
+;         mov rax, LAYER_SIZE                 ;
+;         mov rdi, weights                    ; load pointer to weights matrix (output)
+;         mov rsi, inputs                     ; load pointer to inputs matrix
+;         call layer_sub                      ; subtract inputs from weights
+;         inc rbx                             ; adj++
+
+        mov rdi, inputs                     ; pointer to inputs matrix
+        mov rbx, LAYER_SIZE                 ;
+        mov rax, __float32__(0.0)           ; fill value
+        call layer_fill                     ; clear matrix
+
+        mov rax, __float32__(1.0)           ; fill value
+        mov rbx, LAYER_LEN                  ; 
+        call layer_randcirc                 ; generate random circle
+
+        mov rax, LAYER_LEN                  ; PPM width
+        shl rax, 8                          ; move width to 2nd byte
+        or rax, LAYER_LEN                   ; PPM height in 1st byte
+        mov rsi, inputs                     ; pointer to weights matrix (model)
+        mov rdi, output_file                ; pointer to file name
+        call ppm_fmatrix  
+.circ_activate:
 ;         mov rsi, inputs                     ; load pointer to inputs matrix
 ;         call feed_fwd                       ; calculate weighted sum
 ;         cmp rax, BIAS                       ; check if activated
@@ -191,13 +161,6 @@ train:
 ;         mov rsi, inputs                     ; load pointer to inputs matrix
 ;         call layer_add                      ; add inputs to weights
 ;         inc rbx                             ; adj++
-; .circ_dbg:
-;         mov rax, LAYER_LEN                  ; PPM width
-;         shl rax, 8                          ; move width to 2nd byte
-;         or rax, LAYER_LEN                   ; PPM height in 1st byte
-;         mov rsi, weights                    ; pointer to weights matrix (model)
-;         mov rdi, output_file                ; pointer to file name
-;         call ppm_fmatrix                    ; save float matrix to PPM file
 .next_sample:
         inc rcx                             ; i++
         cmp rcx, SAMPLE_SIZE                ; check loop condition

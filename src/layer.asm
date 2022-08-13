@@ -182,7 +182,61 @@ layer_circ:
 ; rbx (arg) - layer length
 ; *****************************************************************************
 layer_randcirc:
-        nop
+        push rax                            ; save rax
+        push rbx                            ; save rbx
+        push rdx                            ; save rdx
+        mov dword [fill], eax               ; save fill value
+.cx:
+        mov rax, rbx                        ; load range [0,layer_length)
+        call rand32_range                   ; generate random number
+        mov byte [x0], al                   ; store circ.cx = rand(0, layer_length)
+.cy:
+        mov rax, rbx                        ; load range [0,layer_length)
+        call rand32_range                   ; generate random number
+        mov byte [y0], al                   ; store circ.cy = rand(0, layer_length)
+.r1:
+        movzx rax, byte [x0]                ; tmp = circ.cx
+        movzx rdx, byte [y0]                ; load circ.cy
+        cmp rax, rdx                        ; check clamp
+        jle .r2                             ; if (tmp <= circ.cy); no clamp needed
+        mov rax, rdx                        ; clamp tmp to circ.cy
+.r2:
+        mov rdx, rbx                        ; load layer length
+        sub dl, byte [x0]                   ; layer_length - circ.cx
+        cmp rax, rdx                        ; check clamp
+        jle .r3                             ; if (tmp <= layer_length - circ.cx); no clamp needed
+        mov rax, rdx                        ; clamp tmp to layer_length - circ.cx
+.r3:
+        mov rdx, rbx                        ;
+        sub dl, byte [y0]                   ; layer_length - circ.cy
+        cmp rax, rdx                        ; check clamp
+        jle .r4                             ; if (tmp <= layer_length - circ.cy); no clamp needed
+        mov rax, rdx                        ; clamp tmp to layer_length - circ.cy
+.r4:
+        cmp rax, 2                          ; check clamp
+        jge .r5                             ; if (tmp >= 2); no clamp needed
+        mov rax, 2                          ; clamp tmp to 2
+.r5:
+        dec rax                             ; set range to [0, tmp-1]
+        call rand32_range                   ; generate random number
+        inc rax                             ; adjust random number to range [1, tmp)
+        mov byte [x1], al                   ; save circ.r
+.draw:
+        mov rdx, rbx                        ; load layer_length
+        xor rbx, rbx                        ; clear circ args
+        mov bl, byte [y0]                   ; args[0] = circ.cy
+        shl rbx, 8                          ; move to next arg
+        mov bl, byte [x0]                   ; args[1] = circ.cx
+        shl rbx, 8                          ; move to next arg
+        mov bl, dl                          ; args[2] = layer length
+        shl rbx, 8                          ; move to next arg
+        mov bl, byte [x1]                   ; args[3] = circ.r
+        mov eax, dword [fill]               ; load fill value
+        call layer_circ                     ; generate circle in layer
+.end:
+        pop rdx                             ; restore rdx
+        pop rbx                             ; restore rbx
+        pop rax                             ; restore rax
         ret                                 ; end of layer_randcirc subroutine
 
 ; *****************************************************************************
