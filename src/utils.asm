@@ -3,12 +3,6 @@
         global itoa_10
         global strlen
 
-        section .data
-
-        section .rodata
-
-        section .bss
-
         section .text
 
 ; *****************************************************************************

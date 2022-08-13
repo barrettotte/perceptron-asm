@@ -1,6 +1,4 @@
-        section .data
-
-        section .rodata
+; circle generator that didn't quite work as I wanted it to...
 
         section .bss
 length:         resb 1                      ; layer length
@@ -11,7 +9,6 @@ rsq:            resw 1                      ; radius^2
 fill:           resd 1                      ; fill value
 
         section .text
-
 ; *****************************************************************************
 ; layer_circ - Create a circle on layer filled with given value (unfilled...)
 ;

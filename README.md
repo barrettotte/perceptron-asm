@@ -7,7 +7,7 @@ I've also never written any x86 floating point code before, so why not now.
 
 ## Run Locally
 
-- dependencies: `apt install nasm feh ffmpeg`
+- dependencies: `apt install nasm feh`
 - build: `make`
 - build and run: `make run`
 - run: `./bin/perceptron`

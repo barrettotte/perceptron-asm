@@ -8,10 +8,6 @@
 
         %include "inc/common.inc"
 
-        section .data
-
-        section .rodata
-
         section .bss
 length:         resb 1                      ; layer length
 x0:             resb 1                      ; initial x
@@ -23,7 +19,6 @@ rsq:            resw 1                      ; radius^2
 fill:           resd 1                      ; fill value
 
         section .text
-
 ; *****************************************************************************
 ; layer_fill - Reset all layer elements to given value
 ;

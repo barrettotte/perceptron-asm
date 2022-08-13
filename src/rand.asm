@@ -4,10 +4,6 @@
         section .data
 seed:           dd 1                        ; current PRNG seed
 
-        section .rodata
-
-        section .bss
-
         section .text
 
 ; *****************************************************************************
