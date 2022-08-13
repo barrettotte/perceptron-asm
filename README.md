@@ -19,6 +19,7 @@ I've also never written any x86 floating point code before, so why not now.
 - [Perceptron Wikipedia](https://en.wikipedia.org/wiki/Perceptron)
 - [Compiler Explorer](https://godbolt.org/)
 - [Veritasium - Future Computers Will Be Radically Different](https://www.youtube.com/watch?v=GVsUOuSjvcg)
+- [Linear Congruential Generator](https://en.wikipedia.org/wiki/Linear_congruential_generator)
 - PPM files
   - https://manpages.ubuntu.com/manpages/bionic/man5/ppm.5.html
   - https://people.cs.clemson.edu/~dhouse/courses/405/notes/ppm-files.pdf

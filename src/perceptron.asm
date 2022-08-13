@@ -3,8 +3,8 @@
         extern layer_fill
         extern layer_add
         extern layer_sub
-        extern layer_circ
-        extern layer_rect
+        extern layer_randcirc
+        extern layer_randrect
         extern ppm_fmatrix
         extern rand32_range
         extern srand
@@ -22,29 +22,49 @@ inputs:         times LAYER_SIZE dd __float32__(0.0) ; input matrix
 output_file:    db "model", 0x00            ; output file name
 
         section .bss
-tmp_x:          resb 1                      ; temp x position
-tmp_y:          resb 1                      ; temp y position
-tmp_w:          resb 1                      ; temp width
-tmp_l:          resb 1                      ; temp length
 ffwd:           resd 1                      ; temp feed forward output
 
         section .text
 _start:                                     ; ***** main entry *****
         finit                               ; empty stack, mask exceptions, set default rounding to nearest
 main:
-        mov rax, SEED                       ; load seed
-        call srand                          ; seed random number generator
-
         xor rcx, rcx                        ; i = 0
 .train_loop:
+        mov rax, TRAIN_SEED                 ; load training seed
+        call srand                          ; seed random number generator
+
         call train                          ; round of training
-
         cmp rax, 0                          ; check if training done (no adjustments to model)
-        jle .end                            ; if (adj <= 0) break;
-
+        jle .verify                         ; if (adj <= 0) break;
+.train_next:
         inc rcx                             ; i++
         cmp rcx, TRAIN_PASSES               ; check loop condition
         jl .train_loop                      ; while (i < TRAIN_PASSES)
+.verify:
+        mov rax, LAYER_LEN                  ; PPM width
+        shl rax, 8                          ; move width to 2nd byte
+        or rax, LAYER_LEN                   ; PPM height in 1st byte
+        mov rsi, weights                    ; pointer to weights matrix (model)
+        mov rdi, output_file                ; pointer to file name
+        call ppm_fmatrix                    ; save float matrix to PPM file
+
+        mov rax, VERIFY_SEED                ; load verification seed
+        call srand                          ; seed random number generator
+        
+        nop ; TODO: verify model
+        ; int adj = 0;
+        ; for (int i = 0; i < SAMPLE_SIZE; i++) {
+        ;   random_rect();
+        ;   float temp = feed_forward(inputs, weights);
+        ;   if (temp > BIAS)
+        ;     adj++;
+        ;   
+        ;  random_circ();
+        ;  float temp = feed_forward(inputs, weights);
+        ;  if (temp < BIAS)
+        ;     adj++;
+        ;
+        ;  adj / (SAMPLE_SIZE * 2) == fail rate
 .end:
         xor rdi, rdi                        ; clear exit code
         mov rax, SYS_EXIT                   ; command
@@ -91,105 +111,100 @@ train:
         push rdx                            ; save rdx
         push rdi                            ; save rdi
 
+        xor rdx, rdx                        ; tmp = 0
         xor rbx, rbx                        ; adj = 0
         xor rcx, rcx                        ; i = 0
 .sample_loop:
+        mov rdi, inputs                     ; pointer to inputs matrix
+        mov rbx, LAYER_SIZE                 ; 
+        mov rax, __float32__(0.0)           ; fill value
+        call layer_fill                     ; clear matrix
 
-.rect:
-        mov rax, LAYER_SIZE                 ; load layer size
-        mov rbx, __float32__(0.0)           ; load fill value
-        mov rdi, inputs                     ; load pointer to layer
-        call layer_fill                     ; clear layer
-.rect_x:
-        mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
-        call rand32_range                   ; generate random number
-        mov byte [tmp_x], al                ; store rect.x = rand(0, LAYER_LEN-1)
-.rect_y:
-        mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
-        call rand32_range                   ; generate random number
-        mov byte [tmp_y], al                ; store rect.y = rand(0, LAYER_LEN-1)
-.rect_w:
-        mov rax, LAYER_LEN                  ; 
-        sub rax, [tmp_x]                    ; tmp = LAYER_LEN - rect.x
-        cmp rax, 2                          ; check for clamp
-        jge .rect_w_set                     ; if (tmp >= 2); no need to clamp value
-        mov rax, 2                          ; clamp tmp to 2
-.rect_w_set:
-        dec rax                             ; set range to [0, tmp-1]
-        call rand32_range                   ; generate random number
-        inc rax                             ; adjust random number to range [1, temp)
-        mov byte [tmp_w], al                ; save rect.w
-.rect_l:
-        mov rax, LAYER_LEN                  ;
-        sub rax, [tmp_y]                    ; tmp = LAYER_LEN - rect.y
-        cmp rax, 2                          ; check for clamp
-        jge .rect_l_set                     ; if (tmp >= 2); no need to clamp value
-        mov rax, 2                          ; clamp tmp to 2
-.rect_l_set:
-        dec rax                             ; set range to [0, tmp-1]
-        call rand32_range                   ; generate random number
-        inc rax                             ; adjust random number to range [1, temp)
-        mov byte [tmp_l], al                ; save rect.l
-.rect_args:
-        push rbx                            ; save adj
-        xor rbx, rbx                        ; clear rect args
-        mov rbx, LAYER_LEN                  ; args[0] = layer length
-        shl rbx, 8                          ; move to next arg
-        mov bl, byte [tmp_y]                ; args[1] = rect.y
-        shl rbx, 8                          ; move to next arg
-        mov bl, byte [tmp_x]                ; args[2] = rect.x
-        shl rbx, 8                          ; move to next arg
-        mov bl, byte [tmp_l]                ; args[3] = rect.length
-        shl rbx, 8                          ; move to next arg
-        mov bl, byte [tmp_w]                ; args[4] = rect.width
-        mov rax, __float32__(1.0)           ; load fill value
-        mov rdi, inputs                     ; load pointer to layer
-        call layer_rect                     ; generate rectangle in layer
-        pop rbx                             ; restore adj
-.rect_activate:
-        call feed_fwd                       ; calculate weighted sum
+        mov rax, __float32__(1.0)           ; fill value
+        mov rbx, LAYER_LEN                  ; 
+        call layer_randrect                 ; generate random rectangle
 
-;     float tmp = feed_fwd(inputs, weights);
-;     if (tmp > BIAS) {
-;       layer_sub(inputs, weights);  // sub inputs from weights
-;       ppm_fmatrix(weights, "training/weights-xxx.ppm");
-;       count++;
-;     }
+; .circ:
+;         mov rax, LAYER_SIZE                 ; load layer size
+;         push rbx                            ; save adj
+;         mov rbx, __float32__(0.0)           ; load fill value
+;         mov rdi, inputs                     ; load pointer to inputs matrix
+;         call layer_fill                     ; clear layer
+;         pop rbx                             ; restore adj
+; .circ_cx:
+;         mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
+;         call rand32_range                   ; generate random number
+;         mov byte [tmp_x], al                ; store circ.cx = rand(0, LAYER_LEN-1)
+; .circ_cy:
+;         mov rax, LAYER_LEN                  ; load range [0,LAYER_LEN)
+;         call rand32_range                   ; generate random number
+;         mov byte [tmp_y], al                ; store circ.cy = rand(0, LAYER_LEN-1)
+; .circ_r1:
+;         movzx rax, byte [tmp_x]             ; tmp = circ.cx
+;         movzx rdx, byte [tmp_y]             ; load circ.cy
+;         cmp rax,rdx                         ; check clamp
+;         jle .circ_r2                        ; if (tmp <= circ.cy); no clamp needed
+;         mov rax, rdx                        ; clamp tmp to circ.cy
+; .circ_r2:
+;         mov rdx, LAYER_LEN                  ;
+;         sub dl, byte [tmp_x]                ; LAYER_LEN - circ.cx
+;         cmp rax, rdx                        ; check clamp
+;         jle .circ_r3                        ; if (tmp <= LAYER_LEN - circ.cx); no clamp needed
+;         mov rax, rdx                        ; clamp tmp to LAYER_LEN - circ.cx
+; .circ_r3:
+;         mov rdx, LAYER_LEN                  ;
+;         sub dl, byte [tmp_y]                ; LAYER_LEN - circ.cy
+;         cmp rax, rdx                        ; check clamp
+;         jle .circ_r4                        ; if (tmp <= LAYER_LEN - circ.cy); no clamp needed
+;         mov rax, rdx                        ; clamp tmp to LAYER_LEN - circ.cy
+; .circ_r4:
+;         cmp rax, 2                          ; check clamp
+;         jge .circ_r5                        ; if (tmp >= 2); no clamp needed
+;         mov rax, 2                          ; clamp tmp to 2
+; .circ_r5:
+;         dec rax                             ; set range to [0, tmp-1]
+;         call rand32_range                   ; generate random number
+;         inc rax                             ; adjust random number to range [1, tmp)
+;         mov byte [tmp_l], al                ; save circ.r
+; .circ_draw:
+;         push rbx                            ; save adj
+;         xor rbx, rbx                        ; clear circ args
+;         mov bl, byte [tmp_y]                ; args[0] = circ.cy
+;         shl rbx, 8                          ; move to next arg
+;         mov bl, byte [tmp_x]                ; args[1] = circ.cx
+;         shl rbx, 8                          ; move to next arg
+;         mov bl, LAYER_LEN                   ; args[2] = layer length
+;         shl rbx, 8                          ; move to next arg
+;         mov bl, byte [tmp_l]                ; args[3] = circ.r
+;         mov rax, __float32__(1.0)           ; load fill value
+;         mov rdi, inputs                     ; load pointer to layer
+;         call layer_circ                     ; generate circle in layer
+;         pop rbx                             ; restore adj
+; .circ_activate:
+;         mov rsi, inputs                     ; load pointer to inputs matrix
+;         call feed_fwd                       ; calculate weighted sum
+;         cmp rax, BIAS                       ; check if activated
+;         jge .next_sample                    ; if (feed_fwd >= BIAS) then circ inactive
 
-.circ:
-        mov rax, LAYER_SIZE                 ; load layer size
-        mov rbx, __float32__(0.0)           ; load fill value
-        mov rdi, inputs                     ; load pointer to layer
-        call layer_fill                     ; clear layer
-
-.circ_cx:
-.circ_cy:
-.circ_r:
-;     cx = rand(0,LAYER_LEN), cy = rand(0,LAYER_LEN);
-;     r = MAX
-;     if (r > cx) r = cx;
-;     if (r > cy) r = cy;
-;     if (r > LAYER_LEN - cx) r = LAYER_LEN - cx;
-;     if (r > LAYER_LEN - cy) r = LAYER_LEN - cy;
-;     r = rand(1, r);
-
-.circ_args:
-;     layer_circ(inputs, cx, cy, r, 1.0);
-
-.circ_activate:
-        ; call feed_fwd                       ; calculate weighted sum
-;     float tmp = feed_fwd(inputs, weights);
-;     if (tmp < BIAS) {
-;       layer_add(inputs, weights);  // add inputs to weights
-;       ppm_fmatrix(weights, "training/weights-xxx.ppm");
-;       count++;
-;     }
-
+;         mov rax, LAYER_SIZE                 ;
+;         mov rdi, weights                    ; load pointer to weights matrix (output)
+;         mov rsi, inputs                     ; load pointer to inputs matrix
+;         call layer_add                      ; add inputs to weights
+;         inc rbx                             ; adj++
+; .circ_dbg:
+;         mov rax, LAYER_LEN                  ; PPM width
+;         shl rax, 8                          ; move width to 2nd byte
+;         or rax, LAYER_LEN                   ; PPM height in 1st byte
+;         mov rsi, weights                    ; pointer to weights matrix (model)
+;         mov rdi, output_file                ; pointer to file name
+;         call ppm_fmatrix                    ; save float matrix to PPM file
+.next_sample:
         inc rcx                             ; i++
         cmp rcx, SAMPLE_SIZE                ; check loop condition
         jl .sample_loop                     ; while (i < SAMPLE_SIZE)
 .end:
-        mov rax, rbx                        ; return adjustments made to model
+        ; mov rax, rbx                        ; return adjustments made to model
+        xor rax, rax ; TODO: tmp
 
         pop rdi                             ; restore rdi
         pop rdx                             ; restore rdx

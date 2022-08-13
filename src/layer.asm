@@ -1,10 +1,11 @@
         global layer_fill
         global layer_add
         global layer_sub
-        global layer_circ
-        global layer_rect
+        global layer_randcirc
+        global layer_randrect
 
         extern clampz
+        extern rand32_range
 
         %include "inc/common.inc"
 
@@ -23,17 +24,17 @@ fill:           resd 1                      ; fill value
 ; layer_fill - Reset all layer elements to given value
 ;
 ; rdi (arg) - pointer to layer
-; rax (arg) - layer size
-; ebx (arg) - value to fill with
+; eax (arg) - value to fill with
+; rbx (arg) - layer size
 ; *****************************************************************************
 layer_fill:
         push rcx                            ; save rcx
         xor rcx, rcx                        ; i = 0
 .loop_i:
-        mov dword [rdi + (rcx * 4)], ebx    ; layer[i] = c
+        mov dword [rdi + (rcx * 4)], eax    ; layer[i] = c
 .next_i:
         inc rcx                             ; i++
-        cmp rcx, rax                        ; test
+        cmp rcx, rbx                        ; test
         jl .loop_i                          ; while (i < layer_size)
 .done:
         pop rcx                             ; restore rcx
@@ -172,6 +173,19 @@ layer_circ:
         ret                                 ; end of layer_circ subroutine
 
 ; *****************************************************************************
+; layer_randcirc - Generate a random rectangle with fill value.
+;
+; Note: Expects that srand() was already called.
+;
+; rdi (arg) - pointer to layer
+; eax (arg) - value to fill with
+; rbx (arg) - layer length
+; *****************************************************************************
+layer_randcirc:
+        nop
+        ret                                 ; end of layer_randcirc subroutine
+
+; *****************************************************************************
 ; layer_rect - Create a rectangle on layer filled with given value
 ;
 ; rdi (arg) - pointer to layer
@@ -241,6 +255,65 @@ layer_rect:
         pop rax                             ; restore rax
         pop rdi                             ; restore rdi
         ret                                 ; end of layer_rect subroutine
+
+; *****************************************************************************
+; layer_randrect - Generate a random rectangle with fill value
+;
+; Note: Expects that srand() was already called.
+;
+; rdi (arg) - pointer to layer
+; eax (arg) - value to fill with
+; rbx (arg) - layer length
+; *****************************************************************************
+layer_randrect:
+        push rax                            ; save rax
+        push rbx                            ; save rbx
+        mov dword [fill], eax               ; save fill value
+.x:
+        mov rax, rbx                        ; load range [0,layer_length)
+        call rand32_range                   ; generate random number
+        mov byte [x0], al                   ; store rect.x = rand(0, layer_len-1)
+.y:
+        mov rax, rbx                        ; load range [0,LAYER_LEN)
+        call rand32_range                   ; generate random number
+        mov byte [y0], al                   ; store rect.y = rand(0, LAYER_LEN-1)
+.width:
+        mov rax, rbx                        ; 
+        sub al, byte [x0]                   ; tmp = LAYER_LEN - rect.x
+        cmp al, 2                           ; check for clamp
+        jge .width_set                      ; if (tmp >= 2); no need to clamp value
+        mov rax, 2                          ; clamp tmp to 2
+.width_set:
+        dec rax                             ; set range to [0, tmp-1)
+        call rand32_range                   ; generate random number
+        inc rax                             ; adjust random number to range [1, tmp)
+        mov byte [x1], al                   ; save rect.w
+.len:
+        mov rax, rbx                        ;
+        sub al, [y0]                        ; tmp = LAYER_LEN - rect.y
+        cmp al, 2                           ; check for clamp
+        jge .len_set                        ; if (tmp >= 2); no need to clamp value
+        mov rax, 2                          ; clamp tmp to 2
+.len_set:
+        dec rax                             ; set range to [0, tmp-1)
+        call rand32_range                   ; generate random number
+        inc rax                             ; adjust random number to range [1, tmp)
+        mov byte [y1], al                   ; save rect.l
+.draw:
+        shl rbx, 8                          ; move to next arg (args[0] = layer_length)
+        mov bl, byte [y0]                   ; args[1] = rect.y
+        shl rbx, 8                          ; move to next arg
+        mov bl, byte [x0]                   ; args[2] = rect.x
+        shl rbx, 8                          ; move to next arg
+        mov bl, byte [y1]                   ; args[3] = rect.length
+        shl rbx, 8                          ; move to next arg
+        mov bl, byte [x1]                   ; args[4] = rect.width
+        mov eax, dword [fill]               ; load fill value
+        call layer_rect                     ; generate rectangle in layer
+.end:
+        pop rbx                             ; restore rbx
+        pop rax                             ; restore rax
+        ret                                 ; end of layer_randrect subroutine
 
 ; *****************************************************************************
 ; layer_sub - Subtract one layer from the other. A = A - B
