@@ -111,63 +111,53 @@ train:
         push rdx                            ; save rdx
         push rdi                            ; save rdi
 
-        xor rdx, rdx                        ; tmp = 0
-        xor rbx, rbx                        ; adj = 0
+        xor rdx, rdx                        ; adj = 0
         xor rcx, rcx                        ; i = 0
 .sample_loop:
+.rect:
         mov rdi, inputs                     ; pointer to inputs matrix
         mov rbx, LAYER_SIZE                 ; 
         mov rax, __float32__(0.0)           ; fill value
         call layer_fill                     ; clear matrix
-
         mov rax, __float32__(1.0)           ; fill value
         mov rbx, LAYER_LEN                  ; 
         call layer_randrect                 ; generate random rectangle
+
+        mov rsi, inputs                     ; load pointer to inputs matrix
+        call feed_fwd                       ; calculate weighted sum
+        cmp rax, BIAS                       ; check if activated
+        jle .circ                           ; if (feed_fwd <= BIAS) then rect inactive
 .rect_activate:
-;         mov rsi, inputs                     ; load pointer to inputs matrix
-;         call feed_fwd                       ; calculate weighted sum
-;         cmp rax, BIAS                       ; check if activated
-;         jle .circ                           ; if (feed_fwd <= BIAS) then rect inactive
-
-;         mov rax, LAYER_SIZE                 ;
-;         mov rdi, weights                    ; load pointer to weights matrix (output)
-;         mov rsi, inputs                     ; load pointer to inputs matrix
-;         call layer_sub                      ; subtract inputs from weights
-;         inc rbx                             ; adj++
-
+        mov rax, LAYER_SIZE                 ;
+        mov rdi, weights                    ; load pointer to weights matrix (output)
+        mov rsi, inputs                     ; load pointer to inputs matrix
+        call layer_sub                      ; subtract inputs from weights
+        inc rdx                             ; adj++
+.circ:
         mov rdi, inputs                     ; pointer to inputs matrix
         mov rbx, LAYER_SIZE                 ;
         mov rax, __float32__(0.0)           ; fill value
         call layer_fill                     ; clear matrix
-
         mov rax, __float32__(1.0)           ; fill value
         mov rbx, LAYER_LEN                  ; 
         call layer_randcirc                 ; generate random circle
 
-        mov rax, LAYER_LEN                  ; PPM width
-        shl rax, 8                          ; move width to 2nd byte
-        or rax, LAYER_LEN                   ; PPM height in 1st byte
-        mov rsi, inputs                     ; pointer to weights matrix (model)
-        mov rdi, output_file                ; pointer to file name
-        call ppm_fmatrix  
+        mov rsi, inputs                     ; load pointer to inputs matrix
+        call feed_fwd                       ; calculate weighted sum
+        cmp rax, BIAS                       ; check if activated
+        jge .next_sample                    ; if (feed_fwd >= BIAS) then circ inactive
 .circ_activate:
-;         mov rsi, inputs                     ; load pointer to inputs matrix
-;         call feed_fwd                       ; calculate weighted sum
-;         cmp rax, BIAS                       ; check if activated
-;         jge .next_sample                    ; if (feed_fwd >= BIAS) then circ inactive
-
-;         mov rax, LAYER_SIZE                 ;
-;         mov rdi, weights                    ; load pointer to weights matrix (output)
-;         mov rsi, inputs                     ; load pointer to inputs matrix
-;         call layer_add                      ; add inputs to weights
-;         inc rbx                             ; adj++
+        mov rax, LAYER_SIZE                 ;
+        mov rdi, weights                    ; load pointer to weights matrix (output)
+        mov rsi, inputs                     ; load pointer to inputs matrix
+        call layer_add                      ; add inputs to weights
+        inc rdx                             ; adj++
 .next_sample:
         inc rcx                             ; i++
         cmp rcx, SAMPLE_SIZE                ; check loop condition
         jl .sample_loop                     ; while (i < SAMPLE_SIZE)
 .end:
-        ; mov rax, rbx                        ; return adjustments made to model
-        xor rax, rax ; TODO: tmp
+        mov rax, rdx                        ; return adjustments made to model
 
         pop rdi                             ; restore rdi
         pop rdx                             ; restore rdx
