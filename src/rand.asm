@@ -16,9 +16,8 @@ srand:
         ret                                 ; end srand subroutine
 
 ; *****************************************************************************
-; rand32 - Generate unsigned pseudo-random 32-bit integer using 
-;   Linear Congruential Generator (LCG) with values from ANSI C.
-;   
+; lcg - Generate pseudo-random number using Linear Congruential Generator (LCG)
+;
 ;   $X_{n+1} = (aX_n + c) % m$
 ;   
 ;   where: 
@@ -30,7 +29,7 @@ srand:
 ;
 ; eax (ret) - pseudo random number
 ; *****************************************************************************
-rand32:
+lcg:
         push rdx                            ; save rdx
 
         mov eax, 0x41C64E6D                 ; a
@@ -41,7 +40,7 @@ rand32:
         call srand                          ; store new seed for next generation
 
         pop rdx                             ; restore rdx
-        ret                                 ; end rand32 subroutine
+        ret                                 ; end lcg subroutine
 
 ; *****************************************************************************
 ; rand32_range - Generate random number in range 0 through (n-1)
@@ -55,7 +54,7 @@ rand32_range:
         push rdx                            ; save rdx
 
         mov ebx, eax                        ; max value
-        call rand32                         ; generate random
+        call lcg                            ; generate random
         xor edx, edx                        ; clear
         div ebx                             ; clamp to range
         mov eax, edx                        ; remainder
