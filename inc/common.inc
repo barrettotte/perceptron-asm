@@ -4,3 +4,4 @@
         SYS_EXIT:     equ 60
 
         CRLF:         equ 0x0A0D
+        STDOUT:       equ 1

@@ -1,5 +1,6 @@
         global _start
 
+        extern itoa_10
         extern layer_fill
         extern layer_add
         extern layer_sub
@@ -8,6 +9,7 @@
         extern ppm_fmatrix
         extern rand32_range
         extern srand
+        extern strlen
 
         %include "inc/config.inc"
         %include "inc/common.inc"
@@ -19,11 +21,14 @@ weights:        times LAYER_SIZE dd __float32__(0.0) ; weight matrix
 inputs:         times LAYER_SIZE dd __float32__(0.0) ; input matrix
 
         section .rodata
-output_file:    db "model", 0x00            ; output file name
+output_file:    db "model", 0x00              ; output file name
+res_label:      db "Trained model success = " ; label for model results
+res_label_len:  equ $-res_label               ;
 
         section .bss
 tmpf1:          resd 1                      ; temp float
 tmpf2:          resd 1                      ; temp float
+tty_buffer:     resb 64                     ; buffer to print to console
 
         section .text
 _start:                                     ; ***** main entry *****
@@ -53,18 +58,40 @@ main:
         mov ecx, SAMPLE_SIZE                ;
         shl ecx, 1                          ; SAMPLE_SIZE * 2
         mov dword [tmpf2], ecx              ;
-.test:
+
         fld1                                ; ST0 = 1
         fld dword [tmpf1]                   ; ST0 = adj, ST1 = 1
         fld dword [tmpf2]                   ; ST0 = (SAMPLE_SIZE*2), ST1 = adj, ST2 = 1
         fdivp                               ; ST0 = (adj / (SAMPLE_SIZE * 2)), ST1 = 1
         fsubp                               ; ST0 = 1 - (adj / (SAMPLE_SIZE * 2))
-        fstp dword [tmpf1]                  ; save model success = 1 - (adj / (SAMPLE_SIZE) * 2))
-
-        mov ebx, dword [tmpf1]              ; load model success
+        mov dword [tmpf2], __float32__(100.0) ;
+        fld dword [tmpf2]                   ; ST0 = 100.0, ST1 = 1 - (adj / (SAMPLE_SIZE * 2))
+        fmulp                               ; convert to percentage
+        fisttp dword [tmpf1]                ; save model success = (int) (100.0 * (1 - (adj / (SAMPLE_SIZE * 2))))
         
-        nop ; TODO: print to console
-            ;  print("Trained model success rate of {success}")
+        xor rdx, rdx                        ;
+        mov rsi, res_label                  ;
+        mov rcx, res_label_len              ;
+        add rdx, rcx                        ; init buffer size
+        mov rdi, tty_buffer                 ; pointer to file name buffer
+        lea rbx, [rcx]                      ; copy byte src[rcx] to dst[rcx]
+        rep movsb                           ; repeat byte copying until rcx=0
+
+        mov eax, dword [tmpf1]              ; load model success
+        call itoa_10                        ; add success_rate to console buffer as ASCII
+        mov byte [rdi], "%"                 ;
+        inc rdi                             ; increment pointer
+        mov word [rdi], CRLF                ;
+        add rdi, 2                          ; increment pointer
+        mov byte [rdi], 0x00                ; null terminate string
+        mov rdi, tty_buffer                 ; reset pointer
+        call strlen                         ; calculate length of console buffer
+        
+        mov rdx, rax                        ; buffer size
+        mov rsi, tty_buffer                 ; pointer to buffer
+        mov rax, SYS_WRITE                  ; command
+        mov rdi, STDOUT                     ; write to stdout
+        syscall                             ; call kernel
 .end:
         xor rdi, rdi                        ; clear exit code
         mov rax, SYS_EXIT                   ; command
