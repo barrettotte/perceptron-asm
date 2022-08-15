@@ -3,14 +3,19 @@
 Implementation of a single-layer perceptron in x86 assembly.
 
 I was inspired by the very simple perceptron algorithm described in [Veritasium's video on analog computers](https://youtu.be/GVsUOuSjvcg?t=221).
-I've also never written any x86 floating point code before, so why not now.
+I also wanted another assembly challenge and I've never written any x86 floating point code before.
 
 ## Results
 
-500 samples, 3000 train passes, 90% success model
+Model trained with 500 samples and 3000 training rounds resulted in 90% success rate.
 
-TODO: picture of model
-TODO: link to video of training
+<div align="center">
+  <img style="width:240px; height:240px" src="docs/model.png"/>
+  <p>
+    See <a href="model.ppm">model.ppm</a> for the raw image file.
+    <br>I also generated a video of the training process <a href="docs/training.mpf">docs/training.mp4</a>
+  </p>
+</div>
 
 ## Perceptron Summary
 
