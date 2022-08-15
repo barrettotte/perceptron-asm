@@ -12,6 +12,9 @@ I've also never written any x86 floating point code before, so why not now.
 - build and run: `make run`
 - run: `./bin/perceptron`
 
+ffmpeg -y -i dump/weights-%d.ppm test.mp4
+500 samples, 3000 train passes, 90% success model
+
 ## References
 
 - [x86 64-bit Linux System Calls](https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/)

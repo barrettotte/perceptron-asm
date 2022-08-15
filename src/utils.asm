@@ -4,7 +4,6 @@
         global strlen
 
         section .text
-
 ; *****************************************************************************
 ; count_digits - Count digits of unsigned integer (dumb method)
 ;

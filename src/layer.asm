@@ -344,7 +344,7 @@ layer_randrect:
         mov byte [x1], al                   ; save rect.w
 .len:
         mov rax, rbx                        ;
-        sub al, [y0]                        ; tmp = LAYER_LEN - rect.y
+        sub al, byte [y0]                   ; tmp = LAYER_LEN - rect.y
         cmp al, 2                           ; check for clamp
         jge .len_set                        ; if (tmp >= 2); no need to clamp value
         mov rax, 2                          ; clamp tmp to 2
@@ -380,8 +380,8 @@ layer_sub:
         push rcx                            ; save rcx
         xor rcx, rcx                        ; i = 0
 .loop_i:
-        fld dword [rsi + (rcx * 4)]         ; ST0 = A[i]
-        fld dword [rdi + (rcx * 4)]         ; ST0 = B[i], ST1=A[i]
+        fld dword [rdi + (rcx * 4)]         ; ST0 = A[i]
+        fld dword [rsi + (rcx * 4)]         ; ST0 = B[i], ST1=A[i]
         fsubp                               ; ST0 = A[i] - B[i]
         fstp dword [rdi + (rcx * 4)]        ; A[i] = A[i] - B[i]
 .next_i:
@@ -403,8 +403,8 @@ layer_add:
         push rcx                            ; save rcx
         xor rcx, rcx                        ; x = 0
 .loop_i:
-        fld dword [rsi + (rcx * 4)]         ; ST0 = A[i]
-        fld dword [rdi + (rcx * 4)]         ; ST0 = B[i], ST1=A[i]
+        fld dword [rsi + (rcx * 4)]         ; ST0 = B[i]
+        fld dword [rdi + (rcx * 4)]         ; ST0 = A[i], ST1=B[i]
         faddp                               ; ST0 = A[i] + B[i]
         fstp dword [rdi + (rcx * 4)]        ; A[i] = A[i] + B[i]
 .next_i:
