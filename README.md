@@ -13,7 +13,7 @@ Model trained with 500 samples and 3000 training rounds resulted in 90% success 
   <img style="width:240px; height:240px" src="docs/model.png"/>
   <p>
     See <a href="model.ppm">model.ppm</a> for the raw image file.
-    <br>I also generated a video of the training process <a href="docs/training.mpf">docs/training.mp4</a>
+    <br>I also generated a video of the training process <a href="docs/training.mp4">docs/training.mp4</a>
   </p>
 </div>
 
