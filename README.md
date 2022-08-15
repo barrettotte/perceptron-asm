@@ -7,6 +7,8 @@ I also wanted another assembly challenge and I've never written any x86 floating
 
 ## Results
 
+This perceptron is a classifier to distinguish between circles and rectangles.
+
 Model trained with 500 samples and 3000 training rounds resulted in 90% success rate.
 
 <div align="center">
