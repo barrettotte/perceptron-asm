@@ -51,5 +51,6 @@ debug:	build
 run:	build
 	@$(TARGET)
 
-video:
-	ffmpeg -y -i $(DUMP_DIR)/weights-%d.ppm -vf scale=320:-1 -filter:v "setpts=PTS/15,fps=30" docs/training.mp4
+assets:
+	@ffmpeg -y -i $(DUMP_DIR)/weights-%d.ppm -vf scale=320:-1 -filter:v "setpts=PTS/15,fps=30" docs/training.mp4
+	@convert model.ppm docs/model.png

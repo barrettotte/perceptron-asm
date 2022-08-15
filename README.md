@@ -5,15 +5,29 @@ Implementation of a single-layer perceptron in x86 assembly.
 I was inspired by the very simple perceptron algorithm described in [Veritasium's video on analog computers](https://youtu.be/GVsUOuSjvcg?t=221).
 I've also never written any x86 floating point code before, so why not now.
 
+## Results
+
+500 samples, 3000 train passes, 90% success model
+
+TODO: picture of model
+TODO: link to video of training
+
+## Perceptron Summary
+
+A perceptron is a simple mathematical model attempting to mimic how a biological neuron works.
+A neuron fires or activates when the dot product of inputs and weights is larger than the specified bias.
+
+Frank Rosenblatt built the first implementation of a perceptron as a specialized machine in 1958.
+Read more about the history of the perceptron [here](https://en.wikipedia.org/wiki/Perceptron#History).
+
+A single-layer perceptron is the simplest neural network you can make.
+
 ## Run Locally
 
-- dependencies: `apt install nasm feh`
+- dependencies: `apt install nasm ffmpeg imagemagick`
 - build: `make`
 - build and run: `make run`
-- run: `./bin/perceptron`
-
-ffmpeg -y -i dump/weights-%d.ppm test.mp4
-500 samples, 3000 train passes, 90% success model
+- build assets: `make assets`
 
 ## References
 
@@ -22,7 +36,7 @@ ffmpeg -y -i dump/weights-%d.ppm test.mp4
 - [Perceptron Wikipedia](https://en.wikipedia.org/wiki/Perceptron)
 - [Compiler Explorer](https://godbolt.org/)
 - [Veritasium - Future Computers Will Be Radically Different](https://www.youtube.com/watch?v=GVsUOuSjvcg)
-- [Linear Congruential Generator](https://en.wikipedia.org/wiki/Linear_congruential_generator)
+- [Linear Congruential Generator (Easy random numbers in ASM)](https://en.wikipedia.org/wiki/Linear_congruential_generator)
 - PPM files
   - https://manpages.ubuntu.com/manpages/bionic/man5/ppm.5.html
   - https://people.cs.clemson.edu/~dhouse/courses/405/notes/ppm-files.pdf
